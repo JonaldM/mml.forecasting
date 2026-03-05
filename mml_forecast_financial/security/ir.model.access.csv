@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_forecast_revenue_line,forecast.revenue.line,model_forecast_revenue_line,,1,1,1,1
+access_forecast_cogs_line,forecast.cogs.line,model_forecast_cogs_line,,1,1,1,1
+access_forecast_pnl_line,forecast.pnl.line,model_forecast_pnl_line,,1,1,1,1
+access_forecast_cashflow_line,forecast.cashflow.line,model_forecast_cashflow_line,,1,1,1,1
+access_forecast_opex_line,forecast.opex.line,model_forecast_opex_line,,1,1,1,1
