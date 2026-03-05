@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Root Forecasting app — child modules hang their menus off this -->
+    <menuitem id="menu_mml_forecasting_root"
+              name="Forecasting"
+              web_icon="mml_forecast_core,static/description/icon.png"
+              sequence="45"/>
+
+    <!-- Config menu lives in core — both demand and financial link to configs -->
+    <menuitem id="menu_forecast_configs"
+              name="Forecasts"
+              parent="menu_mml_forecasting_root"
+              sequence="5"/>
+
+    <menuitem id="menu_forecast_config_all"
+              name="All Forecasts"
+              parent="menu_forecast_configs"
+              action="action_forecast_config"
+              sequence="10"/>
+
+    <!-- Settings sub-menu -->
+    <menuitem id="menu_forecast_settings"
+              name="Configuration"
+              parent="menu_mml_forecasting_root"
+              sequence="90"/>
+
+    <menuitem id="menu_forecast_origin_ports"
+              name="Origin Ports"
+              parent="menu_forecast_settings"
+              action="action_forecast_origin_port"
+              sequence="10"/>
+</odoo>

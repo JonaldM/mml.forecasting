@@ -3,3 +3,9 @@ access_forecast_origin_port_user,forecast.origin.port user,model_forecast_origin
 access_forecast_origin_port_manager,forecast.origin.port manager,model_forecast_origin_port,base.group_system,1,1,1,1
 access_forecast_supplier_term_user,forecast.supplier.term user,model_forecast_supplier_term,base.group_user,1,0,0,0
 access_forecast_supplier_term_manager,forecast.supplier.term manager,model_forecast_supplier_term,base.group_system,1,1,1,1
+access_forecast_fx_rate_user,forecast.fx.rate user,model_forecast_fx_rate,base.group_user,1,0,0,0
+access_forecast_fx_rate_manager,forecast.fx.rate manager,model_forecast_fx_rate,base.group_system,1,1,1,1
+access_forecast_customer_term_user,forecast.customer.term user,model_forecast_customer_term,base.group_user,1,0,0,0
+access_forecast_customer_term_manager,forecast.customer.term manager,model_forecast_customer_term,base.group_system,1,1,1,1
+access_forecast_config_user,forecast.config user,model_forecast_config,base.group_user,1,0,0,0
+access_forecast_config_manager,forecast.config manager,model_forecast_config,base.group_system,1,1,1,1
