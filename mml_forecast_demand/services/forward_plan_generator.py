@@ -44,7 +44,13 @@ class ForwardPlanGenerator:
         if not lines:
             return self.env['roq.forward.plan']
 
-        lt_days = self.settings.get_lead_time_days(supplier)
+        # Use port-level transit days when the supplier has an origin port configured.
+        # This provides more accurate port-to-NZ transit data from forecast.origin.port.
+        # Falls back to supplier lead time override → system default (via SettingsHelper).
+        if supplier.origin_port_id and supplier.origin_port_id.transit_days_nz:
+            lt_days = supplier.origin_port_id.transit_days_nz
+        else:
+            lt_days = self.settings.get_lead_time_days(supplier)
         review_days = self.settings.get_review_interval_days(supplier)
         holiday_periods = self._parse_holiday_periods(supplier.supplier_holiday_periods)
 

@@ -9,6 +9,13 @@ _logger = logging.getLogger(__name__)
 class ResPartnerRoqExt(models.Model):
     _inherit = 'res.partner'
 
+    # --- Forecast core integration ---
+    origin_port_id = fields.Many2one(
+        'forecast.origin.port',
+        string='Default Origin Port',
+        help='Default port of origin for shipments from this supplier. Used in financial forecasting.',
+    )
+
     # --- Port & trade terms ---
     fob_port_id = fields.Many2one(
         'roq.port', string='FOB Port (Origin)',

@@ -1,43 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_roq_root"
-              name="ROQ Forecast"
-              sequence="10"
-              action="action_roq_order_dashboard"/>
+    <data>
+        <!-- Demand Planning — child of shared Forecasting root from mml_forecast_core -->
+        <menuitem id="menu_roq_root"
+                  name="Demand Planning"
+                  parent="mml_forecast_core.menu_mml_forecasting_root"
+                  sequence="10"/>
 
-    <menuitem id="menu_roq_order_dashboard"
-              name="Order Dashboard"
-              parent="menu_roq_root"
-              action="action_roq_order_dashboard"
-              sequence="5"/>
+        <menuitem id="menu_roq_order_dashboard"
+                  name="Order Dashboard"
+                  parent="menu_roq_root"
+                  action="action_roq_order_dashboard"
+                  sequence="5"/>
 
-    <menuitem id="menu_roq_runs"
-              name="ROQ Runs"
-              parent="menu_roq_root"
-              action="action_roq_forecast_run"
-              sequence="10"/>
+        <menuitem id="menu_roq_runs"
+                  name="ROQ Runs"
+                  parent="menu_roq_root"
+                  action="action_roq_forecast_run"
+                  sequence="10"/>
 
-    <menuitem id="menu_roq_shipment_groups"
-              name="Shipment Groups"
-              parent="menu_roq_root"
-              action="action_roq_shipment_group"
-              sequence="20"/>
+        <menuitem id="menu_roq_shipment_groups"
+                  name="Shipment Groups"
+                  parent="menu_roq_root"
+                  action="action_roq_shipment_group"
+                  sequence="20"/>
 
-    <menuitem id="menu_roq_shipment_calendar"
-              name="Shipment Calendar"
-              parent="menu_roq_root"
-              action="action_roq_shipment_calendar"
-              sequence="25"/>
+        <menuitem id="menu_roq_shipment_calendar"
+                  name="Shipment Calendar"
+                  parent="menu_roq_root"
+                  action="action_roq_shipment_calendar"
+                  sequence="25"/>
 
-    <menuitem id="menu_roq_config"
-              name="Configuration"
-              parent="menu_roq_root"
-              sequence="90"
-              groups="stock.group_stock_manager"/>
+        <menuitem id="menu_roq_config"
+                  name="Configuration"
+                  parent="menu_roq_root"
+                  sequence="90"
+                  groups="stock.group_stock_manager"/>
 
-    <menuitem id="menu_roq_freight_ports"
-              name="Freight Ports"
-              parent="menu_roq_config"
-              action="action_roq_port"
-              sequence="10"/>
+        <menuitem id="menu_roq_freight_ports"
+                  name="Freight Ports"
+                  parent="menu_roq_config"
+                  action="action_roq_port"
+                  sequence="10"/>
+    </data>
 </odoo>
