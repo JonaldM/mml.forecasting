@@ -40,7 +40,6 @@
     },
     'installable': True,
     'auto_install': False,
-    'application': True,
-    'web_icon': 'mml_forecast_demand,static/description/icon.png',
+    'application': False,
     'license': 'LGPL-3',
 }

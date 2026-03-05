@@ -1,6 +1,11 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_forecast_revenue_line,forecast.revenue.line,model_forecast_revenue_line,,1,1,1,1
-access_forecast_cogs_line,forecast.cogs.line,model_forecast_cogs_line,,1,1,1,1
-access_forecast_pnl_line,forecast.pnl.line,model_forecast_pnl_line,,1,1,1,1
-access_forecast_cashflow_line,forecast.cashflow.line,model_forecast_cashflow_line,,1,1,1,1
-access_forecast_opex_line,forecast.opex.line,model_forecast_opex_line,,1,1,1,1
+access_forecast_revenue_line_user,forecast.revenue.line user,model_forecast_revenue_line,base.group_user,1,0,0,0
+access_forecast_revenue_line_manager,forecast.revenue.line manager,model_forecast_revenue_line,base.group_system,1,1,1,1
+access_forecast_cogs_line_user,forecast.cogs.line user,model_forecast_cogs_line,base.group_user,1,0,0,0
+access_forecast_cogs_line_manager,forecast.cogs.line manager,model_forecast_cogs_line,base.group_system,1,1,1,1
+access_forecast_pnl_line_user,forecast.pnl.line user,model_forecast_pnl_line,base.group_user,1,0,0,0
+access_forecast_pnl_line_manager,forecast.pnl.line manager,model_forecast_pnl_line,base.group_system,1,1,1,1
+access_forecast_cashflow_line_user,forecast.cashflow.line user,model_forecast_cashflow_line,base.group_user,1,0,0,0
+access_forecast_cashflow_line_manager,forecast.cashflow.line manager,model_forecast_cashflow_line,base.group_system,1,1,1,1
+access_forecast_opex_line_user,forecast.opex.line user,model_forecast_opex_line,base.group_user,1,0,0,0
+access_forecast_opex_line_manager,forecast.opex.line manager,model_forecast_opex_line,base.group_system,1,1,1,1

@@ -88,7 +88,7 @@ class ForecastGenerateWizard(models.TransientModel):
         ForecastRun = self.env.get('roq.forecast.run')
         if ForecastRun is not None:
             runs = ForecastRun.search(
-                [('state', '=', 'done')], order='create_date desc', limit=1
+                [('status', '=', 'complete')], order='create_date desc', limit=1
             )
             if runs:
                 demand_data = runs.get_demand_forecast(

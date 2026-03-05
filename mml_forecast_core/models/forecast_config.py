@@ -1,4 +1,5 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 from dateutil.relativedelta import relativedelta
 
 
@@ -108,7 +109,12 @@ class ForecastConfig(models.Model):
 
     def action_generate_forecast(self):
         self.ensure_one()
-        self.env['forecast.generate.wizard'].with_context(active_id=self.id).generate(self)
+        Wizard = self.env.get('forecast.generate.wizard')
+        if Wizard is None:
+            raise UserError(
+                _("The MML Forecast Financial module must be installed to generate forecasts.")
+            )
+        Wizard.with_context(active_id=self.id).generate(self)
         self.state = 'generated'
 
     def action_reset_draft(self):
