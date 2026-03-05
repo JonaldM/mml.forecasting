@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_forecast_origin_port_list" model="ir.ui.view">
+        <field name="name">forecast.origin.port.list</field>
+        <field name="model">forecast.origin.port</field>
+        <field name="arch" type="xml">
+            <list string="Origin Ports" editable="bottom">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="country_id"/>
+                <field name="transit_days_nz"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_forecast_origin_port_form" model="ir.ui.view">
+        <field name="name">forecast.origin.port.form</field>
+        <field name="model">forecast.origin.port</field>
+        <field name="arch" type="xml">
+            <form string="Origin Port">
+                <sheet>
+                    <group>
+                        <field name="code"/>
+                        <field name="name"/>
+                        <field name="country_id"/>
+                        <field name="transit_days_nz"/>
+                        <field name="notes"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_forecast_origin_port" model="ir.actions.act_window">
+        <field name="name">Origin Ports</field>
+        <field name="res_model">forecast.origin.port</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

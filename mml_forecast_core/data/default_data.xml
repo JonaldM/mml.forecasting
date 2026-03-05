@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="port_cnsha" model="forecast.origin.port">
+        <field name="code">CNSHA</field>
+        <field name="name">Shanghai</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="transit_days_nz">22</field>
+    </record>
+    <record id="port_cnngb" model="forecast.origin.port">
+        <field name="code">CNNGB</field>
+        <field name="name">Ningbo</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="transit_days_nz">20</field>
+    </record>
+    <record id="port_cnszx" model="forecast.origin.port">
+        <field name="code">CNSZX</field>
+        <field name="name">Shenzhen / Yantian</field>
+        <field name="country_id" ref="base.cn"/>
+        <field name="transit_days_nz">18</field>
+    </record>
+</odoo>

@@ -1,1 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_forecast_origin_port_user,forecast.origin.port user,model_forecast_origin_port,base.group_user,1,0,0,0
+access_forecast_origin_port_manager,forecast.origin.port manager,model_forecast_origin_port,base.group_system,1,1,1,1
