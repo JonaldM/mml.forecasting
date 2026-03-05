@@ -343,54 +343,109 @@ class ForecastGenerateWizard(models.TransientModel):
     # -------------------------------------------------------------------------
     def _generate_cashflow_lines(self, config, months, revenue_lines, cogs_lines):
         """
-        Build monthly cash flow from timing rules.
+        Build monthly cash flow with correct supplier payment timing.
 
-        Receivables: Revenue shifted to receipt month per customer payment terms.
-        Payables: COGS shifted based on supplier payment timing.
+        Outflow timing (per sale month M — goods must arrive before M):
+          - Deposit: paid at PO placement → month M minus ceil(deposit_trigger_days / 30)
+          - Balance: paid at bill of lading → month M minus ceil(transit_days / 30)
+          - Freight: paid same month as balance (to freight forwarder on shipment)
+          - GST/duty: paid to customs on arrival → month M (same as sale month)
+
+        Inflow timing:
+          - Revenue receipt: compute_receipt_date(invoice_date=period_start) per
+            customer's forecast.customer.term rule; buckets to the receipt month.
+
+        If no supplier terms are configured, falls back to:
+          deposit 3 months back, balance 1 month back (sensible NZ import defaults).
+        If no customer terms are found for a partner, falls back to 45 days + 20th DOM.
         """
+        import math
+
         CashflowLine = self.env['forecast.cashflow.line']
         CustomerTerm = self.env['forecast.customer.term']
 
-        # Build month index for bucketing
+        # Build month index for bucketing inflows/outflows
         month_map = {m[0]: m[1] for m in months}
+        month_set = set(month_map.keys())
 
-        # --- Receivables: bucket revenue by receipt month ---
-        receipts_by_month = defaultdict(float)
-        for rev in revenue_lines:
-            receipt_date = CustomerTerm.get_default_receipt_date(
-                config, rev.partner_id.id, rev.period_start,
-            )
-            # Bucket to the month the cash actually lands
-            receipt_month = receipt_date.replace(day=1)
-            if receipt_month in month_map:
-                receipts_by_month[receipt_month] += rev.revenue
+        # --- Resolve supplier payment timing parameters ---
+        supplier_terms = config.supplier_term_ids
+        if supplier_terms:
+            # Use the first configured supplier term.
+            # Future: loop over terms if supplier_id is on cogs lines.
+            s_term = supplier_terms[0]
+            deposit_months_back = math.ceil(s_term.deposit_trigger_days / 30.0)
+            transit_months_back = math.ceil(s_term.transit_days / 30.0)
+            deposit_pct = s_term.deposit_pct / 100.0
+        else:
+            # Default NZ import assumptions: ~90-day total lead → 3-month deposit,
+            # ~22-day transit → 1-month balance.
+            deposit_months_back = 3
+            transit_months_back = 1
+            deposit_pct = 0.30
 
-        # --- Payables: assume COGS paid in the same month as goods arrive ---
-        # (Simplification: FOB paid on shipment ~2 months before sale month,
-        #  but for v1 we assume costs align with the sale month.
-        #  Phase 2 can model deposit/balance splits and lead times.)
-        outflows_by_month = defaultdict(lambda: {
-            'fob': 0.0, 'freight': 0.0, 'duty_gst': 0.0, '3pl': 0.0,
-        })
+        balance_pct = 1.0 - deposit_pct
 
-        # GST/import tax rate: prefer config.tax_id, fallback to 15%
+        # GST/import tax rate: prefer config.tax_id, fallback to NZ 15%
         tax_rate = config.tax_id.amount / 100.0 if config.tax_id else 0.15
 
-        for cogs in cogs_lines:
-            m = cogs.period_start
-            if m in month_map:
-                outflows_by_month[m]['fob'] += cogs.fob_total_nzd
-                outflows_by_month[m]['freight'] += cogs.freight_total_nzd
-                # Duty + GST on CIF value (rate from config.tax_id or 15% fallback)
-                cif = cogs.fob_total_nzd + cogs.freight_total_nzd
-                gst_on_import = cif * tax_rate
-                outflows_by_month[m]['duty_gst'] += (
-                    cogs.duty_total_nzd + gst_on_import
-                )
-                outflows_by_month[m]['3pl'] += cogs.tpl_total_nzd
+        # --- Initialise accumulators per month ---
+        # Payables (split by type for auditable P&L mapping)
+        fob_deposit_by_month = defaultdict(float)
+        fob_balance_by_month = defaultdict(float)
+        freight_by_month = defaultdict(float)
+        duty_gst_by_month = defaultdict(float)
+        tpl_by_month = defaultdict(float)
 
-        # --- OpEx cash outflows (same month) ---
-        opex_monthly = sum(
+        for cogs in cogs_lines:
+            sale_month = cogs.period_start
+            if sale_month not in month_set:
+                continue
+
+            fob = cogs.fob_total_nzd
+            freight = cogs.freight_total_nzd
+            duty = cogs.duty_total_nzd
+
+            # Deposit payment: ceil(deposit_trigger_days/30) months before sale
+            deposit_month = (
+                sale_month - relativedelta(months=deposit_months_back)
+            ).replace(day=1)
+            if deposit_month in month_set:
+                fob_deposit_by_month[deposit_month] += fob * deposit_pct
+
+            # Balance payment: ceil(transit_days/30) months before sale
+            balance_month = (
+                sale_month - relativedelta(months=transit_months_back)
+            ).replace(day=1)
+            if balance_month in month_set:
+                fob_balance_by_month[balance_month] += fob * balance_pct
+                # Freight paid same month as balance (forwarder invoices at shipment)
+                freight_by_month[balance_month] += freight
+
+            # GST/duty: paid on arrival, which aligns with the sale month
+            # CIF = FOB + freight; GST is levied on CIF value.
+            cif = fob + freight
+            gst_on_import = cif * tax_rate
+            if sale_month in month_set:
+                duty_gst_by_month[sale_month] += duty + gst_on_import
+
+            # 3PL: pick/pack/despatch costs incurred in the sale month
+            if sale_month in month_set:
+                tpl_by_month[sale_month] += cogs.tpl_total_nzd
+
+        # --- Receivables: bucket revenue by customer receipt month ---
+        receipts_by_month = defaultdict(float)
+        for rev in revenue_lines:
+            invoice_date = rev.period_start  # treat 1st of month as invoice date
+            receipt_date = CustomerTerm.get_default_receipt_date(
+                config, rev.partner_id.id, invoice_date,
+            )
+            receipt_month = receipt_date.replace(day=1)
+            if receipt_month in month_set:
+                receipts_by_month[receipt_month] += rev.revenue
+
+        # --- OpEx cash outflows (fixed: same month; variable: proportional to revenue) ---
+        opex_fixed_monthly = sum(
             line.monthly_amount or 0.0
             for line in config.opex_line_ids
             if line.cost_type == 'fixed'
@@ -399,7 +454,7 @@ class ForecastGenerateWizard(models.TransientModel):
         # --- Build cashflow lines ---
         lines_data = []
         for period_start, period_label in months:
-            # Variable opex for this month (need revenue)
+            # Variable opex for this month
             month_rev = sum(
                 r.revenue for r in revenue_lines
                 if r.period_start == period_start
@@ -410,26 +465,34 @@ class ForecastGenerateWizard(models.TransientModel):
                 if line.cost_type == 'variable'
             )
 
-            outflows = outflows_by_month.get(period_start, {})
+            # Aggregate FOB deposit + balance into payments_fob
+            payments_fob = (
+                fob_deposit_by_month.get(period_start, 0.0)
+                + fob_balance_by_month.get(period_start, 0.0)
+            )
+
             lines_data.append({
                 'config_id': config.id,
                 'period_start': period_start,
                 'period_label': period_label,
                 'receipts_from_customers': receipts_by_month.get(period_start, 0.0),
-                'payments_fob': outflows.get('fob', 0.0),
-                'payments_freight': outflows.get('freight', 0.0),
-                'payments_duty_gst': outflows.get('duty_gst', 0.0),
-                'payments_3pl': outflows.get('3pl', 0.0),
-                'payments_opex': opex_monthly + opex_var,
+                'payments_fob': payments_fob,
+                'payments_freight': freight_by_month.get(period_start, 0.0),
+                'payments_duty_gst': duty_gst_by_month.get(period_start, 0.0),
+                'payments_3pl': tpl_by_month.get(period_start, 0.0),
+                'payments_opex': opex_fixed_monthly + opex_var,
             })
 
         lines = CashflowLine.create(lines_data)
 
-        # Compute cumulative cash position
+        # Compute cumulative cash position (running total over sorted periods)
         cumulative = 0.0
         for line in lines.sorted('period_start'):
             cumulative += line.net_cashflow
             line.cumulative_cashflow = cumulative
 
-        _logger.info('Created %d cash flow lines', len(lines))
+        _logger.info(
+            'Created %d cash flow lines (deposit %d months back, balance %d months back)',
+            len(lines), deposit_months_back, transit_months_back,
+        )
         return lines
