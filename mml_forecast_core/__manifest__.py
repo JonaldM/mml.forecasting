@@ -4,7 +4,7 @@
     'summary': 'Shared infrastructure for MML Forecasting Suite',
     'author': 'MML Consumer Products Ltd',
     'category': 'Forecasting',
-    'depends': ['base', 'product', 'sale', 'purchase', 'account', 'mail'],
+    'depends': ['mml_base', 'base', 'product', 'sale', 'purchase', 'account', 'mail'],
     'data': [
         'security/ir.model.access.csv',
         'data/default_data.xml',
