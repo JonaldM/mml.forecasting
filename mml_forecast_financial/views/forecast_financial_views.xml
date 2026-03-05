@@ -1,4 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Financial forecast views — to be completed in Task 10 -->
+
+    <!-- ── Actions ─────────────────────────────────────── -->
+
+    <record id="action_forecast_pnl" model="ir.actions.act_window">
+        <field name="name">P&amp;L Summary</field>
+        <field name="res_model">forecast.pnl.line</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_forecast_cashflow" model="ir.actions.act_window">
+        <field name="name">Cashflow</field>
+        <field name="res_model">forecast.cashflow.line</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ── Menus ──────────────────────────────────────── -->
+
+    <menuitem id="menu_forecast_financial"
+              name="Financial Planning"
+              parent="mml_forecast_core.menu_mml_forecasting_root"
+              sequence="20"/>
+
+    <menuitem id="menu_forecast_pnl"
+              name="P&amp;L Summary"
+              parent="menu_forecast_financial"
+              action="action_forecast_pnl"
+              sequence="10"/>
+
+    <menuitem id="menu_forecast_cashflow"
+              name="Cashflow"
+              parent="menu_forecast_financial"
+              action="action_forecast_cashflow"
+              sequence="20"/>
+
 </odoo>
