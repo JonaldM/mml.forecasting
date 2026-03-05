@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Root menu -->
+    <menuitem id="menu_forecast_root"
+              name="Financial Forecast"
+              web_icon="mml_financial_forecast,static/description/icon.png"
+              sequence="45"/>
+
+    <!-- Forecasts -->
+    <menuitem id="menu_forecast_main"
+              name="Forecasts"
+              parent="menu_forecast_root"
+              sequence="10"/>
+
+    <menuitem id="menu_forecast_config"
+              name="All Forecasts"
+              parent="menu_forecast_main"
+              action="action_forecast_config"
+              sequence="10"/>
+
+    <!-- Analysis -->
+    <menuitem id="menu_forecast_analysis"
+              name="Analysis"
+              parent="menu_forecast_root"
+              sequence="20"/>
+
+    <menuitem id="menu_forecast_pnl"
+              name="P&amp;L Summary"
+              parent="menu_forecast_analysis"
+              action="action_forecast_pnl"
+              sequence="10"/>
+
+    <menuitem id="menu_forecast_cashflow"
+              name="Cash Flow"
+              parent="menu_forecast_analysis"
+              action="action_forecast_cashflow"
+              sequence="20"/>
+
+    <menuitem id="menu_forecast_revenue"
+              name="Revenue Detail"
+              parent="menu_forecast_analysis"
+              action="action_forecast_revenue"
+              sequence="30"/>
+
+    <menuitem id="menu_forecast_cogs"
+              name="COGS Detail"
+              parent="menu_forecast_analysis"
+              action="action_forecast_cogs"
+              sequence="40"/>
+
+</odoo>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The generate wizard is called programmatically from forecast.config.
+         No standalone view needed, but we register the model for access rights. -->
+</odoo>

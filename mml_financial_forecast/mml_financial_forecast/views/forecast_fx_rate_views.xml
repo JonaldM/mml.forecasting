@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_forecast_fx_rate_list" model="ir.ui.view">
+        <field name="name">forecast.fx.rate.list</field>
+        <field name="model">forecast.fx.rate</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="config_id"/>
+                <field name="currency_id"/>
+                <field name="rate_to_nzd"/>
+                <field name="nzd_per_unit"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+
+</odoo>
