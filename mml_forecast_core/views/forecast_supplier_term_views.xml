@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_forecast_supplier_term_list" model="ir.ui.view">
+        <field name="name">forecast.supplier.term.list</field>
+        <field name="model">forecast.supplier.term</field>
+        <field name="arch" type="xml">
+            <list string="Supplier Payment Terms" editable="bottom">
+                <field name="supplier_id"/>
+                <field name="deposit_pct"/>
+                <field name="deposit_trigger_days"/>
+                <field name="production_lead_days"/>
+                <field name="origin_port_id"/>
+                <field name="payment_method"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+</odoo>
