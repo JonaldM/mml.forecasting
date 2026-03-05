@@ -1,0 +1,23 @@
+{
+    'name': 'MML Forecast Core',
+    'version': '19.0.1.0.0',
+    'summary': 'Shared infrastructure for MML Forecasting Suite',
+    'author': 'MML Consumer Products Ltd',
+    'category': 'Forecasting',
+    'depends': ['base', 'product', 'sale', 'purchase', 'account', 'mail'],
+    'data': [
+        'security/ir.model.access.csv',
+        'data/default_data.xml',
+        'views/forecast_origin_port_views.xml',
+        'views/forecast_supplier_term_views.xml',
+        'views/forecast_fx_rate_views.xml',
+        'views/forecast_customer_term_views.xml',
+        'views/forecast_config_views.xml',
+        'views/menu_views.xml',
+    ],
+    'installable': True,
+    'application': True,
+    'auto_install': False,
+    'web_icon': 'mml_forecast_core,static/description/icon.png',
+    'license': 'LGPL-3',
+}
