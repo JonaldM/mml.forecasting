@@ -108,3 +108,66 @@ class RoqForecastRun(models.Model):
             source_module='mml_roq_forecast',
             payload={'run_ref': self.name, 'sku_count': len(self.line_ids)},
         )
+
+    def get_demand_forecast(self, date_start, horizon_months):
+        """
+        Return demand forecast data as a list of dicts.
+
+        This is the standard demand interface consumed by mml_forecast_financial.
+        Decouples the financial module from roq internals.
+
+        The ROQ model stores a single forward-looking ``forecasted_weekly_demand``
+        per SKU/warehouse line (not a time-series). This method projects that
+        weekly rate into monthly units for each month in the horizon, using the
+        actual number of days in each month to convert (days / 7 × weekly_demand).
+
+        Args:
+            date_start (date): First day of the forecast period (will be normalised
+                to the 1st of the month if not already).
+            horizon_months (int): Number of months to include.
+
+        Returns:
+            list[dict]: Each dict has keys:
+                product_id (int): product.product ID
+                partner_id (int or False): res.partner ID (supplier for this line)
+                period_start (date): First day of the month
+                period_label (str): e.g. "Apr 2026"
+                forecast_units (float): Units expected to sell in that month
+                brand (str): product category name or ''
+                category (str): product category complete name or ''
+        """
+        from dateutil.relativedelta import relativedelta
+        import calendar
+
+        self.ensure_one()
+        result = []
+
+        # Build ordered list of month start dates in the horizon
+        months = []
+        d = date_start.replace(day=1)
+        for _ in range(horizon_months):
+            months.append(d)
+            d += relativedelta(months=1)
+
+        for line in self.line_ids:
+            weekly_demand = line.forecasted_weekly_demand or 0.0
+            product = line.product_id
+            brand = product.categ_id.name if product.categ_id else ''
+            category = product.categ_id.complete_name if product.categ_id else ''
+            partner_id = line.supplier_id.id if line.supplier_id else False
+
+            for period_start in months:
+                days_in_month = calendar.monthrange(period_start.year, period_start.month)[1]
+                forecast_units = weekly_demand * days_in_month / 7.0
+
+                result.append({
+                    'product_id': product.id,
+                    'partner_id': partner_id,
+                    'period_start': period_start,
+                    'period_label': period_start.strftime('%b %Y'),
+                    'forecast_units': forecast_units,
+                    'brand': brand,
+                    'category': category,
+                })
+
+        return result

@@ -22,3 +22,4 @@ from . import test_reports
 from . import test_moq_enforcer
 from . import test_raise_po_wizard
 from . import test_roq_service
+from . import test_demand_interface
