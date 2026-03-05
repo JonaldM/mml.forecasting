@@ -36,5 +36,7 @@ class ForecastOriginPort(models.Model):
             vals['code'] = vals['code'].upper()
         return super().write(vals)
 
-    def name_get(self):
-        return [(p.id, f'{p.code} — {p.name}') for p in self]
+    @api.depends('code', 'name')
+    def _compute_display_name(self):
+        for rec in self:
+            rec.display_name = f'{rec.code} — {rec.name}'
