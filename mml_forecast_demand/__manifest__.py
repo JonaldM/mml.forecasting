@@ -1,11 +1,11 @@
 {
-    'name': 'MML ROQ Forecast & Procurement Planning',
+    'name': 'MML Forecast Demand',
     'version': '19.0.1.0.0',
     'summary': 'Demand forecasting, ROQ calculation, container consolidation, and 12-month procurement planning',
     'author': 'MML Consumer Products',
     'category': 'Inventory/Purchase',
     'depends': [
-        'mml_base',
+        'mml_forecast_core',
         'base', 'sale', 'purchase', 'stock',
         'stock_landed_costs',
     ],
@@ -14,7 +14,6 @@
     'data': [
         'security/ir.model.access.csv',
         'data/ir_sequence_data.xml',
-        'data/roq_port_data.xml',
         'data/ir_cron_data.xml',
         'views/roq_forecast_run_views.xml',
         'views/roq_forecast_line_views.xml',
@@ -33,7 +32,7 @@
     ],
     'assets': {
         'web.assets_backend': [
-            'mml_roq_forecast/static/src/scss/shipment_calendar.scss',
+            'mml_forecast_demand/static/src/scss/shipment_calendar.scss',
         ],
     },
     'external_dependencies': {
@@ -42,6 +41,6 @@
     'installable': True,
     'auto_install': False,
     'application': True,
-    'web_icon': 'mml_roq_forecast,static/description/icon.png',
+    'web_icon': 'mml_forecast_demand,static/description/icon.png',
     'license': 'LGPL-3',
 }
