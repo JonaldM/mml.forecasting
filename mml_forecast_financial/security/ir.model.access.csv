@@ -9,3 +9,4 @@ access_forecast_cashflow_line_user,forecast.cashflow.line user,model_forecast_ca
 access_forecast_cashflow_line_manager,forecast.cashflow.line manager,model_forecast_cashflow_line,base.group_system,1,1,1,1
 access_forecast_opex_line_user,forecast.opex.line user,model_forecast_opex_line,base.group_user,1,0,0,0
 access_forecast_opex_line_manager,forecast.opex.line manager,model_forecast_opex_line,base.group_system,1,1,1,1
+access_forecast_generate_wizard_user,forecast.generate.wizard user,model_forecast_generate_wizard,base.group_user,1,1,1,1

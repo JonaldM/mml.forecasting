@@ -216,13 +216,17 @@ class ForecastGenerateWizard(models.TransientModel):
         Resolve sell price for a product-customer pair.
         Priority: customer pricelist → product list_price.
         """
-        pricelist = partner.property_product_pricelist
-        if pricelist:
-            price = pricelist._get_product_price(
-                product, 1.0, partner,
-            )
-            if price:
-                return price
+        # Safe pricelist price lookup for Odoo 17+
+        # property_product_pricelist was moved to sale_management in Odoo 17.
+        # _get_product_price() no longer accepts a partner argument from Odoo 17.
+        try:
+            pricelist = getattr(partner, 'property_product_pricelist', None)
+            if pricelist:
+                price = pricelist._get_product_price(product, 1.0)
+                if price:
+                    return price
+        except Exception:
+            pass
         return product.list_price or 0.0
 
     # -------------------------------------------------------------------------

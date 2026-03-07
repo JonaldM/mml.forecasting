@@ -16,7 +16,7 @@ class ForecastSupplierTerm(models.Model):
         'res.partner',
         string='Supplier / Factory',
         required=True,
-        domain=[('supplier_rank', '>', 0)],
+        domain="[('supplier_rank', '>', 0)]",
     )
     deposit_pct = fields.Float(
         string='Deposit %',

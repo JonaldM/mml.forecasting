@@ -1,4 +1,4 @@
-from odoo import models, fields
+from odoo import models, fields, api
 
 
 class ForecastRevenueLine(models.Model):
@@ -36,6 +36,7 @@ class ForecastRevenueLine(models.Model):
         store=True,
     )
 
+    @api.depends('forecast_units', 'sell_price_unit')
     def _compute_revenue(self):
         for rec in self:
             rec.revenue = rec.forecast_units * rec.sell_price_unit

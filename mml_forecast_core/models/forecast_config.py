@@ -47,7 +47,7 @@ class ForecastConfig(models.Model):
     tax_id = fields.Many2one(
         'account.tax',
         string='Import Tax',
-        domain=[('type_tax_use', '=', 'purchase')],
+        domain="[('type_tax_use', '=', 'purchase')]",
         help=(
             'Purchase tax applied on import (GST/VAT). '
             'NZ = 15% GST, AU = 10% GST, UK = 20% VAT. '
