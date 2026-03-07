@@ -1,6 +1,6 @@
 import logging
+import math
 from collections import defaultdict
-from datetime import date
 
 from dateutil.relativedelta import relativedelta
 
@@ -225,7 +225,7 @@ class ForecastGenerateWizard(models.TransientModel):
                 price = pricelist._get_product_price(product, 1.0)
                 if price:
                     return price
-        except Exception:
+        except (AttributeError, TypeError):
             pass
         return product.list_price or 0.0
 
@@ -363,8 +363,6 @@ class ForecastGenerateWizard(models.TransientModel):
           deposit 3 months back, balance 1 month back (sensible NZ import defaults).
         If no customer terms are found for a partner, falls back to 45 days + 20th DOM.
         """
-        import math
-
         CashflowLine = self.env['forecast.cashflow.line']
         CustomerTerm = self.env['forecast.customer.term']
 
