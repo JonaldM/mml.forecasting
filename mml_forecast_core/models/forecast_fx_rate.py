@@ -22,9 +22,9 @@ class ForecastFxRate(models.Model):
         digits=(12, 4),
         required=True,
         help=(
-            'How many NZD per 1 unit of foreign currency. '
-            'E.g. USD rate of 0.60 means 1 NZD = 0.60 USD, '
-            'so 1 USD = 1/0.60 = 1.6667 NZD.'
+            'How much foreign currency 1 NZD buys (FCY per 1 NZD). '
+            'E.g. USD rate of 0.60 means 1 NZD = 0.60 USD. '
+            'NZD per unit is auto-computed as 1 / rate_to_nzd.'
         ),
     )
     nzd_per_unit = fields.Float(
