@@ -3,6 +3,7 @@
     'version': '19.0.1.0.0',
     'summary': 'Shared infrastructure for MML Forecasting Suite',
     'author': 'MML Consumer Products Ltd',
+    'website': 'https://www.mmlconsumerproducts.co.nz',
     'category': 'Forecasting',
     'depends': ['mml_base', 'base', 'product', 'sale', 'purchase', 'account', 'mail'],
     'data': [

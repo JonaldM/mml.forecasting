@@ -3,7 +3,8 @@
     'version': '19.0.1.0.0',
     'summary': 'P&L and cashflow financial forecasting driven by demand signals',
     'description': 'Financial forecasting module: revenue, COGS, P&L, and cashflow projection driven by demand from mml_forecast_demand.',
-    'author': 'MML Consumer Products',
+    'author': 'MML Consumer Products Ltd',
+    'website': 'https://www.mmlconsumerproducts.co.nz',
     'category': 'Accounting/Accounting',
     'depends': ['mml_base', 'mml_forecast_core', 'account'],
     'data': [

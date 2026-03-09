@@ -63,14 +63,6 @@ class ForecastConfig(models.Model):
     supplier_term_ids = fields.One2many(
         'forecast.supplier.term', 'config_id', string='Supplier Payment Terms',
     )
-    opex_line_ids = fields.One2many('forecast.opex.line', 'config_id', string='Operating Expenses')
-    revenue_line_ids = fields.One2many('forecast.revenue.line', 'config_id', string='Revenue Lines')
-    cogs_line_ids = fields.One2many('forecast.cogs.line', 'config_id', string='COGS Lines')
-    pnl_line_ids = fields.One2many('forecast.pnl.line', 'config_id', string='P&L Summary')
-    cashflow_line_ids = fields.One2many(
-        'forecast.cashflow.line', 'config_id', string='Cash Flow Lines',
-    )
-
     # --- Totals ---
     total_revenue = fields.Float(
         string='Total Revenue', compute='_compute_totals', store=True,
@@ -95,17 +87,13 @@ class ForecastConfig(models.Model):
             else:
                 rec.date_end = False
 
-    @api.depends('pnl_line_ids.revenue', 'pnl_line_ids.total_cogs', 'pnl_line_ids.gross_margin')
     def _compute_totals(self):
+        # Base no-op — overridden by mml_forecast_financial which has access to pnl_line_ids
         for rec in self:
-            lines = rec.pnl_line_ids
-            rec.total_revenue = sum(lines.mapped('revenue'))
-            rec.total_cogs = sum(lines.mapped('total_cogs'))
-            rec.total_gross_margin = sum(lines.mapped('gross_margin'))
-            rec.gross_margin_pct = (
-                (rec.total_gross_margin / rec.total_revenue * 100)
-                if rec.total_revenue else 0.0
-            )
+            rec.total_revenue = 0.0
+            rec.total_cogs = 0.0
+            rec.total_gross_margin = 0.0
+            rec.gross_margin_pct = 0.0
 
     def action_generate_forecast(self):
         self.ensure_one()

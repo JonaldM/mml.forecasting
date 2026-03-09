@@ -1,6 +1,98 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- ── Forecast Config form extension: financial tabs ── -->
+
+    <record id="view_forecast_config_form_financial" model="ir.ui.view">
+        <field name="name">forecast.config.form.financial</field>
+        <field name="model">forecast.config</field>
+        <field name="inherit_id" ref="mml_forecast_core.view_forecast_config_form"/>
+        <field name="arch" type="xml">
+            <!-- Inject financial tabs after the Notes tab -->
+            <xpath expr="//page[@name='notes']" position="after">
+
+                <!-- Tab: Operating Expenses -->
+                <page string="Operating Expenses" name="opex">
+                    <field name="opex_line_ids">
+                        <list editable="bottom">
+                            <field name="name"/>
+                            <field name="cost_type"/>
+                            <field name="monthly_amount"/>
+                            <field name="pct_of_revenue"/>
+                            <field name="notes"/>
+                        </list>
+                    </field>
+                </page>
+
+                <!-- Tab: P&L Summary -->
+                <page string="P&amp;L Summary" name="pnl_summary"
+                      invisible="state == 'draft'">
+                    <field name="pnl_line_ids">
+                        <list>
+                            <field name="period_label"/>
+                            <field name="revenue" widget="monetary"/>
+                            <field name="total_cogs" widget="monetary"/>
+                            <field name="gross_margin" widget="monetary"/>
+                            <field name="gross_margin_pct" widget="percentage"/>
+                            <field name="total_opex" widget="monetary"/>
+                            <field name="ebitda" widget="monetary"/>
+                            <field name="ebitda_pct" widget="percentage"/>
+                        </list>
+                    </field>
+                </page>
+
+                <!-- Tab: Cash Flow -->
+                <page string="Cash Flow" name="cashflow"
+                      invisible="state == 'draft'">
+                    <field name="cashflow_line_ids">
+                        <list>
+                            <field name="period_label"/>
+                            <field name="receipts_from_customers" widget="monetary"/>
+                            <field name="payments_fob" widget="monetary"/>
+                            <field name="payments_freight" widget="monetary"/>
+                            <field name="payments_duty_gst" widget="monetary"/>
+                            <field name="payments_opex" widget="monetary"/>
+                            <field name="net_cashflow" widget="monetary"/>
+                        </list>
+                    </field>
+                </page>
+
+                <!-- Tab: Revenue Detail -->
+                <page string="Revenue Detail" name="revenue_detail"
+                      invisible="state == 'draft'">
+                    <field name="revenue_line_ids">
+                        <list>
+                            <field name="period_label"/>
+                            <field name="product_id"/>
+                            <field name="partner_id"/>
+                            <field name="forecast_units"/>
+                            <field name="sell_price_unit" widget="monetary"/>
+                            <field name="revenue" widget="monetary"/>
+                        </list>
+                    </field>
+                </page>
+
+                <!-- Tab: COGS Detail -->
+                <page string="COGS Detail" name="cogs_detail"
+                      invisible="state == 'draft'">
+                    <field name="cogs_line_ids">
+                        <list>
+                            <field name="period_label"/>
+                            <field name="product_id"/>
+                            <field name="forecast_units"/>
+                            <field name="fob_total_nzd" widget="monetary"/>
+                            <field name="freight_total_nzd" widget="monetary"/>
+                            <field name="duty_total_nzd" widget="monetary"/>
+                            <field name="tpl_total_nzd" widget="monetary"/>
+                            <field name="total_cogs_nzd" widget="monetary"/>
+                        </list>
+                    </field>
+                </page>
+
+            </xpath>
+        </field>
+    </record>
+
     <!-- ── Actions ─────────────────────────────────────── -->
 
     <record id="action_forecast_pnl" model="ir.actions.act_window">
