@@ -84,16 +84,23 @@ class ForecastGenerateWizard(models.TransientModel):
         """
         demand = []
 
-        # --- Strategy 1: ROQ module (mml_forecast_demand) ---
+        # --- Strategy 1: ROQ module ---
         ForecastRun = self.env.get('roq.forecast.run')
         if ForecastRun is not None:
             runs = ForecastRun.search(
                 [('status', '=', 'complete')], order='create_date desc', limit=1
             )
             if runs:
-                demand_data = runs.get_demand_forecast(
-                    config.date_start, config.horizon_months
-                )
+                try:
+                    demand_data = runs.get_demand_forecast(
+                        config.date_start, config.horizon_months
+                    )
+                except AttributeError:
+                    _logger.warning(
+                        'roq.forecast.run has no get_demand_forecast method; '
+                        'falling back to sale history'
+                    )
+                    demand_data = []
                 if demand_data:
                     _logger.info(
                         'Pulled %d demand records from ROQ run %s',
