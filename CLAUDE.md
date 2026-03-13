@@ -131,3 +131,10 @@ The refactor plan at `docs/plans/2026-03-05-forecasting-suite-refactor.md` defin
 Key known gap: the cashflow wizard currently uses only `supplier_terms[0]` for timing — future work should match each COGS line to its product's actual supplier term.
 
 Phase 2 backlog (not in current plan): import tax refund inflow (~2 month lag), pallet storage costs, seasonality curves, LC bank processing time.
+
+## Available Commands
+
+- `/plan` — implementation plan before Sprint 3 (demand migration) or Sprint 4 (cashflow rewrite)
+- `/tdd` — write pure-Python tests for generation pipeline logic first
+- `/code-review` — review wizard and model changes before release
+- `/build-fix` — diagnose `odoo-bin --test-enable` test failures
