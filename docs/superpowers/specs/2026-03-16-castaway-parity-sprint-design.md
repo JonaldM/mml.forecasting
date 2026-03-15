@@ -93,7 +93,7 @@ auto-pulled from Odoo's `account.move.line` trial balance with per-field manual 
 **One2one implementation pattern (Odoo has no `fields.One2one`):**
 - `forecast.opening.balance` holds `config_id = fields.Many2one('forecast.config', required=True, ondelete='cascade')`
 - `_sql_constraints = [('config_unique', 'UNIQUE(config_id)', 'Only one opening balance per forecast config.')]`
-- `forecast.config` (via `forecast_config_ext.py`) holds `opening_balance_idss = fields.One2many('forecast.opening.balance', 'config_id')` — returns at most one record due to the unique constraint
+- `forecast.config` (via `forecast_config_ext.py`) holds `opening_balance_ids = fields.One2many('forecast.opening.balance', 'config_id')` — returns at most one record due to the unique constraint
   (Named `_ids` not `_id` per Odoo One2many convention, even though only one record is ever present)
 
 **Fields:**
