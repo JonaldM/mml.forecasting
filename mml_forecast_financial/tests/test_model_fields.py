@@ -75,3 +75,21 @@ class TestForecastBalanceSheetLine:
         for f in ('total_current_assets', 'total_current_liabilities',
                   'total_equity', 'total_assets', 'bs_difference'):
             assert f in cls._fields_meta, f'missing {f}'
+
+
+class TestForecastVarianceLine:
+    def test_variance_fields_defined(self):
+        mod = _import_model('mml_forecast_financial.models.forecast_variance_line')
+        cls = mod.ForecastVarianceLine
+        for f in ('forecast_units', 'forecast_revenue', 'actual_units',
+                  'actual_revenue', 'variance_units', 'variance_revenue',
+                  'variance_revenue_pct'):
+            assert f in cls._fields_meta, f'missing {f}'
+
+
+class TestPnlLineActualFields:
+    def test_actual_stored_fields_defined(self):
+        mod = _import_model('mml_forecast_financial.models.forecast_pnl_line')
+        cls = mod.ForecastPnlLine
+        for f in ('actual_revenue', 'actual_cogs', 'actual_opex'):
+            assert f in cls._fields_meta, f'missing {f}'

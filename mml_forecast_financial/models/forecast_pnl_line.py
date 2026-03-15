@@ -62,6 +62,39 @@ class ForecastPnlLine(models.Model):
         store=True,
     )
 
+    # --- Actuals (populated by action_compute_variance) ---
+    actual_revenue = fields.Float(string='Actual Revenue (NZD)', digits=(16, 2))
+    actual_cogs = fields.Float(string='Actual COGS (NZD)', digits=(16, 2))
+    actual_opex = fields.Float(string='Actual OpEx (NZD)', digits=(16, 2))
+
+    actual_gross_margin = fields.Float(
+        string='Actual Gross Margin (NZD)',
+        compute='_compute_actuals',
+        digits=(16, 2),
+    )
+    actual_ebitda = fields.Float(
+        string='Actual EBITDA (NZD)',
+        compute='_compute_actuals',
+        digits=(16, 2),
+    )
+
+    # --- Variance ---
+    variance_revenue = fields.Float(
+        string='Variance Revenue (NZD)',
+        compute='_compute_actuals',
+        digits=(16, 2),
+    )
+    variance_revenue_pct = fields.Float(
+        string='Variance Revenue %',
+        compute='_compute_actuals',
+        digits=(5, 2),
+    )
+    variance_ebitda_pct = fields.Float(
+        string='Variance EBITDA %',
+        compute='_compute_actuals',
+        digits=(5, 2),
+    )
+
     @api.depends(
         'revenue', 'cogs_fob', 'cogs_freight', 'cogs_duty', 'cogs_3pl',
         'opex_fixed', 'opex_variable',
@@ -79,4 +112,18 @@ class ForecastPnlLine(models.Model):
             rec.ebitda = rec.gross_margin - rec.total_opex
             rec.ebitda_pct = (
                 (rec.ebitda / rec.revenue * 100) if rec.revenue else 0.0
+            )
+
+    @api.depends('actual_revenue', 'actual_cogs', 'actual_opex', 'revenue', 'ebitda')
+    def _compute_actuals(self):
+        for rec in self:
+            rec.actual_gross_margin = rec.actual_revenue - rec.actual_cogs
+            rec.actual_ebitda = rec.actual_gross_margin - rec.actual_opex
+            rec.variance_revenue = rec.actual_revenue - rec.revenue
+            rec.variance_revenue_pct = (
+                (rec.variance_revenue / rec.revenue * 100) if rec.revenue else 0.0
+            )
+            rec.variance_ebitda_pct = (
+                ((rec.actual_ebitda - rec.ebitda) / rec.ebitda * 100)
+                if rec.ebitda else 0.0
             )
