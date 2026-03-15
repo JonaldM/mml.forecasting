@@ -59,3 +59,19 @@ class TestForecastOpeningBalance:
             assert f'opening_{item}' in cls._fields_meta, f'missing opening_{item}'
             assert f'override_{item}' in cls._fields_meta, f'missing override_{item}'
             assert f'effective_{item}' in cls._fields_meta, f'missing effective_{item}'
+
+
+class TestForecastBalanceSheetLine:
+    def test_base_stored_fields_defined(self):
+        mod = _import_model('mml_forecast_financial.models.forecast_balance_sheet_line')
+        cls = mod.ForecastBalanceSheetLine
+        for f in ('cash', 'trade_receivables', 'inventory_value',
+                  'trade_payables', 'retained_earnings'):
+            assert f in cls._fields_meta, f'missing {f}'
+
+    def test_computed_summary_fields_defined(self):
+        mod = _import_model('mml_forecast_financial.models.forecast_balance_sheet_line')
+        cls = mod.ForecastBalanceSheetLine
+        for f in ('total_current_assets', 'total_current_liabilities',
+                  'total_equity', 'total_assets', 'bs_difference'):
+            assert f in cls._fields_meta, f'missing {f}'

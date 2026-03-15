@@ -5,3 +5,4 @@ from . import forecast_cashflow_line
 from . import forecast_opex_line
 from . import forecast_config_ext
 from . import forecast_opening_balance
+from . import forecast_balance_sheet_line
