@@ -32,7 +32,7 @@
                     </p>
                     <field name="opening_balance_ids" nolabel="1">
                         <form>
-                            <group string="Cash &amp; Receivables">
+                            <group string="Cash">
                                 <field name="opening_cash" string="Cash (Auto)" readonly="1"/>
                                 <field name="override_cash"/>
                                 <field name="opening_cash_manual" string="Cash (Manual)"
