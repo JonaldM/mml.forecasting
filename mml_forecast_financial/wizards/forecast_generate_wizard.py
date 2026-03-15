@@ -1,6 +1,7 @@
 import logging
 import math
 from collections import defaultdict
+from datetime import date
 
 from dateutil.relativedelta import relativedelta
 
@@ -390,8 +391,7 @@ class ForecastGenerateWizard(models.TransientModel):
         CashflowLine = self.env['forecast.cashflow.line']
 
         # Build month index for bucketing inflows/outflows
-        month_map = {m[0]: m[1] for m in months}
-        month_set = set(month_map.keys())
+        month_set = {m[0] for m in months}
 
         # --- Build per-supplier term lookup ---
         # Falls back to NZ import defaults when a product's supplier is not in the term list.
@@ -601,7 +601,6 @@ class ForecastGenerateWizard(models.TransientModel):
         Only processes months where period_start < date.today().
         Silently skips if all periods are in the future.
         """
-        from datetime import date
         today = date.today()
         past_months = [(ps, pl) for ps, pl in months if ps < today]
         if not past_months:
