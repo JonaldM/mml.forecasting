@@ -49,3 +49,13 @@ class TestCogsLineSupplier:
         mod = _import_model('mml_forecast_financial.models.forecast_cogs_line')
         cls = mod.ForecastCogsLine
         assert 'supplier_id' in cls._fields_meta
+
+
+class TestForecastOpeningBalance:
+    def test_all_auto_fields_defined(self):
+        mod = _import_model('mml_forecast_financial.models.forecast_opening_balance')
+        cls = mod.ForecastOpeningBalance
+        for item in ('cash', 'receivables', 'inventory', 'payables', 'equity'):
+            assert f'opening_{item}' in cls._fields_meta, f'missing opening_{item}'
+            assert f'override_{item}' in cls._fields_meta, f'missing override_{item}'
+            assert f'effective_{item}' in cls._fields_meta, f'missing effective_{item}'

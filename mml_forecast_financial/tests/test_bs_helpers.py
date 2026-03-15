@@ -1,0 +1,22 @@
+"""
+Pure-Python tests for BS computation helpers.
+These helpers are extracted as module-level functions so they can be tested
+without Odoo. The wizard calls these functions internally.
+
+Run: pytest mml_forecast_financial/tests/test_bs_helpers.py -q
+"""
+from mml_forecast_financial.models.forecast_opening_balance import effective_value
+
+
+class TestEffectiveValue:
+    def test_returns_auto_when_override_false(self):
+        assert effective_value(auto=10_000.0, manual=99_000.0, override=False) == 10_000.0
+
+    def test_returns_manual_when_override_true(self):
+        assert effective_value(auto=10_000.0, manual=99_000.0, override=True) == 99_000.0
+
+    def test_zero_auto_no_override(self):
+        assert effective_value(auto=0.0, manual=5_000.0, override=False) == 0.0
+
+    def test_zero_manual_with_override(self):
+        assert effective_value(auto=8_000.0, manual=0.0, override=True) == 0.0
