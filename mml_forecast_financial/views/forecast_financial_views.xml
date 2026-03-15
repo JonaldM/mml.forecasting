@@ -30,6 +30,9 @@
                         Auto-pulled from Odoo accounting trial balance at the forecast start date.
                         Toggle Override to enter a manual value — the auto value is still retained.
                     </p>
+                    <p class="text-muted" invisible="opening_balance_ids">
+                        No opening balance data yet. Click <b>Pull from Accounting</b> in the header to populate from the trial balance.
+                    </p>
                     <field name="opening_balance_ids" nolabel="1">
                         <form>
                             <group string="Cash">
@@ -171,6 +174,7 @@
                             <field name="total_current_assets" widget="monetary"/>
                             <field name="trade_payables" widget="monetary"/>
                             <field name="retained_earnings" widget="monetary"/>
+                            <field name="total_equity" widget="monetary"/>
                             <field name="bs_difference" widget="monetary"
                                    decoration-danger="abs(bs_difference) &gt; total_current_assets * 0.01"/>
                         </list>
