@@ -2,6 +2,16 @@ from odoo import models, fields
 
 
 class ProductTemplateForecasting(models.Model):
+    """
+    Extension of product.template for forecasting cost drivers.
+
+    Adds x_cbm_per_unit and x_3pl_pick_rate — custom fields (x_ prefix = Odoo Studio
+    convention) used by the financial forecasting COGS waterfall. The wizard reads these
+    via getattr() for zero-safe access when no value is set on a product.
+
+    Lives in mml_forecast_core (not financial) so mml_forecast_demand can also
+    reference these fields without a dependency on mml_forecast_financial.
+    """
     _inherit = 'product.template'
 
     x_cbm_per_unit = fields.Float(
