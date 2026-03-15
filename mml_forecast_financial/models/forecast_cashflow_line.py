@@ -22,9 +22,19 @@ class ForecastCashflowLine(models.Model):
     )
 
     # --- Outflows ---
+    payments_fob_deposit = fields.Float(
+        string='FOB Deposit (NZD)',
+        help='Deposit paid at PO placement (% of FOB, timed months before sale month).',
+    )
+    payments_fob_balance = fields.Float(
+        string='FOB Balance (NZD)',
+        help='Balance payment at bill of lading (remainder of FOB, timed by transit days).',
+    )
     payments_fob = fields.Float(
         string='FOB Payments (NZD)',
-        help='Supplier payments (deposit + balance on shipment).',
+        compute='_compute_payments_fob',
+        store=True,
+        help='Total FOB payments = deposit + balance.',
     )
     payments_freight = fields.Float(string='Freight Payments (NZD)')
     payments_duty_gst = fields.Float(
@@ -54,9 +64,15 @@ class ForecastCashflowLine(models.Model):
         help='Set on the first period only; subsequent periods are computed.',
     )
 
+    @api.depends('payments_fob_deposit', 'payments_fob_balance')
+    def _compute_payments_fob(self):
+        for rec in self:
+            rec.payments_fob = rec.payments_fob_deposit + rec.payments_fob_balance
+
     @api.depends(
         'receipts_from_customers',
-        'payments_fob', 'payments_freight', 'payments_duty_gst',
+        'payments_fob_deposit', 'payments_fob_balance',
+        'payments_freight', 'payments_duty_gst',
         'payments_3pl', 'payments_opex',
     )
     def _compute_cashflow(self):

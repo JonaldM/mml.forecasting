@@ -23,3 +23,15 @@ class TestProductTemplateExt:
         mod = _import_model('mml_forecast_core.models.product_template_ext')
         cls = mod.ProductTemplateForecasting
         assert 'x_3pl_pick_rate' in cls._fields_meta
+
+
+class TestCashflowLineFobSplit:
+    def test_payments_fob_deposit_field_defined(self):
+        mod = _import_model('mml_forecast_financial.models.forecast_cashflow_line')
+        cls = mod.ForecastCashflowLine
+        assert 'payments_fob_deposit' in cls._fields_meta
+
+    def test_payments_fob_balance_field_defined(self):
+        mod = _import_model('mml_forecast_financial.models.forecast_cashflow_line')
+        cls = mod.ForecastCashflowLine
+        assert 'payments_fob_balance' in cls._fields_meta
