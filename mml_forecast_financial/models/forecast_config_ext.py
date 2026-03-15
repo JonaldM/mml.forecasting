@@ -1,3 +1,5 @@
+from dateutil.relativedelta import relativedelta
+
 from odoo import models, fields, api
 
 
@@ -59,6 +61,7 @@ class ForecastConfigFinancialExt(models.Model):
         if not ob:
             ob = self.env['forecast.opening.balance'].create({'config_id': self.id})
         ob._pull_from_accounting(self.date_start)
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
 
     def action_compute_variance(self):
         """
@@ -66,13 +69,13 @@ class ForecastConfigFinancialExt(models.Model):
         Can be called independently of a full forecast regeneration.
         """
         self.ensure_one()
-        from dateutil.relativedelta import relativedelta
         months = []
         current = self.date_start.replace(day=1)
         for _ in range(self.horizon_months):
             months.append((current, current.strftime('%Y-%m')))
             current += relativedelta(months=1)
         self.env['forecast.generate.wizard']._compute_variance_lines(self, months)
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
 
     def action_reset_draft(self):
         """
