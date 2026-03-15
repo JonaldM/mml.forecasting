@@ -8,8 +8,68 @@
         <field name="model">forecast.config</field>
         <field name="inherit_id" ref="mml_forecast_core.view_forecast_config_form"/>
         <field name="arch" type="xml">
+
+            <!-- Header buttons -->
+            <xpath expr="//header" position="inside">
+                <button name="action_pull_opening_balance"
+                        string="Pull from Accounting"
+                        type="object"
+                        invisible="state == 'locked'"/>
+                <button name="action_compute_variance"
+                        string="Compute Variance"
+                        type="object"
+                        invisible="state != 'generated'"/>
+            </xpath>
+
             <!-- Inject financial tabs after the Notes tab -->
             <xpath expr="//page[@name='notes']" position="after">
+
+                <!-- Tab: Opening Balance -->
+                <page string="Opening Balance" name="opening_balance">
+                    <p class="text-muted">
+                        Auto-pulled from Odoo accounting trial balance at the forecast start date.
+                        Toggle Override to enter a manual value — the auto value is still retained.
+                    </p>
+                    <field name="opening_balance_ids" nolabel="1">
+                        <form>
+                            <group string="Cash &amp; Receivables">
+                                <field name="opening_cash" string="Cash (Auto)" readonly="1"/>
+                                <field name="override_cash"/>
+                                <field name="opening_cash_manual" string="Cash (Manual)"
+                                       invisible="not override_cash"/>
+                                <field name="effective_cash" string="Cash (Effective)" readonly="1"/>
+                            </group>
+                            <group string="Receivables">
+                                <field name="opening_receivables" string="Receivables (Auto)" readonly="1"/>
+                                <field name="override_receivables"/>
+                                <field name="opening_receivables_manual" string="Receivables (Manual)"
+                                       invisible="not override_receivables"/>
+                                <field name="effective_receivables" string="Receivables (Effective)" readonly="1"/>
+                            </group>
+                            <group string="Inventory">
+                                <field name="opening_inventory" string="Inventory (Auto)" readonly="1"/>
+                                <field name="override_inventory"/>
+                                <field name="opening_inventory_manual" string="Inventory (Manual)"
+                                       invisible="not override_inventory"/>
+                                <field name="effective_inventory" string="Inventory (Effective)" readonly="1"/>
+                            </group>
+                            <group string="Payables">
+                                <field name="opening_payables" string="Payables (Auto)" readonly="1"/>
+                                <field name="override_payables"/>
+                                <field name="opening_payables_manual" string="Payables (Manual)"
+                                       invisible="not override_payables"/>
+                                <field name="effective_payables" string="Payables (Effective)" readonly="1"/>
+                            </group>
+                            <group string="Equity">
+                                <field name="opening_equity" string="Equity (Auto)" readonly="1"/>
+                                <field name="override_equity"/>
+                                <field name="opening_equity_manual" string="Equity (Manual)"
+                                       invisible="not override_equity"/>
+                                <field name="effective_equity" string="Equity (Effective)" readonly="1"/>
+                            </group>
+                        </form>
+                    </field>
+                </page>
 
                 <!-- Tab: Operating Expenses -->
                 <page string="Operating Expenses" name="opex">
@@ -31,11 +91,18 @@
                         <list>
                             <field name="period_label"/>
                             <field name="revenue" widget="monetary"/>
+                            <field name="actual_revenue" widget="monetary" optional="show"/>
+                            <field name="variance_revenue" widget="monetary" optional="show"/>
+                            <field name="variance_revenue_pct" widget="percentage" optional="show"
+                                   decoration-success="variance_revenue_pct &gt; 0"
+                                   decoration-danger="variance_revenue_pct &lt; -10"/>
                             <field name="total_cogs" widget="monetary"/>
                             <field name="gross_margin" widget="monetary"/>
                             <field name="gross_margin_pct" widget="percentage"/>
                             <field name="total_opex" widget="monetary"/>
                             <field name="ebitda" widget="monetary"/>
+                            <field name="actual_ebitda" widget="monetary" optional="show"/>
+                            <field name="variance_ebitda_pct" widget="percentage" optional="show"/>
                             <field name="ebitda_pct" widget="percentage"/>
                         </list>
                     </field>
@@ -48,11 +115,14 @@
                         <list>
                             <field name="period_label"/>
                             <field name="receipts_from_customers" widget="monetary"/>
+                            <field name="payments_fob_deposit" widget="monetary" optional="show"/>
+                            <field name="payments_fob_balance" widget="monetary" optional="show"/>
                             <field name="payments_fob" widget="monetary"/>
                             <field name="payments_freight" widget="monetary"/>
                             <field name="payments_duty_gst" widget="monetary"/>
                             <field name="payments_opex" widget="monetary"/>
                             <field name="net_cashflow" widget="monetary"/>
+                            <field name="cumulative_cashflow" widget="monetary"/>
                         </list>
                     </field>
                 </page>
@@ -85,6 +155,44 @@
                             <field name="duty_total_nzd" widget="monetary"/>
                             <field name="tpl_total_nzd" widget="monetary"/>
                             <field name="total_cogs_nzd" widget="monetary"/>
+                        </list>
+                    </field>
+                </page>
+
+                <!-- Tab: Balance Sheet -->
+                <page string="Balance Sheet" name="balance_sheet"
+                      invisible="state == 'draft'">
+                    <field name="balance_sheet_line_ids">
+                        <list>
+                            <field name="period_label"/>
+                            <field name="cash" widget="monetary"/>
+                            <field name="trade_receivables" widget="monetary"/>
+                            <field name="inventory_value" widget="monetary"/>
+                            <field name="total_current_assets" widget="monetary"/>
+                            <field name="trade_payables" widget="monetary"/>
+                            <field name="retained_earnings" widget="monetary"/>
+                            <field name="bs_difference" widget="monetary"
+                                   decoration-danger="abs(bs_difference) &gt; total_current_assets * 0.01"/>
+                        </list>
+                    </field>
+                </page>
+
+                <!-- Tab: Variance -->
+                <page string="Variance" name="variance"
+                      invisible="state == 'draft'">
+                    <field name="variance_line_ids">
+                        <list>
+                            <field name="period_label"/>
+                            <field name="product_id"/>
+                            <field name="partner_id"/>
+                            <field name="forecast_units"/>
+                            <field name="actual_units"/>
+                            <field name="forecast_revenue" widget="monetary"/>
+                            <field name="actual_revenue" widget="monetary"/>
+                            <field name="variance_revenue" widget="monetary"/>
+                            <field name="variance_revenue_pct" widget="percentage"
+                                   decoration-success="variance_revenue_pct &gt; 0"
+                                   decoration-danger="variance_revenue_pct &lt; -10"/>
                         </list>
                     </field>
                 </page>
