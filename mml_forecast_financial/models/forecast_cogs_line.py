@@ -24,6 +24,11 @@ class ForecastCogsLine(models.Model):
         store=True,
     )
     partner_id = fields.Many2one('res.partner', string='Customer')
+    supplier_id = fields.Many2one(
+        'res.partner',
+        string='Supplier',
+        help='Primary supplier for this product. Used to look up supplier payment terms.',
+    )
     brand = fields.Char(string='Brand')
     category = fields.Char(string='Category')
 

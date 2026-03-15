@@ -35,3 +35,17 @@ class TestCashflowLineFobSplit:
         mod = _import_model('mml_forecast_financial.models.forecast_cashflow_line')
         cls = mod.ForecastCashflowLine
         assert 'payments_fob_balance' in cls._fields_meta
+
+
+class TestRevenueLineReceiptMonth:
+    def test_receipt_month_field_defined(self):
+        mod = _import_model('mml_forecast_financial.models.forecast_revenue_line')
+        cls = mod.ForecastRevenueLine
+        assert 'receipt_month' in cls._fields_meta
+
+
+class TestCogsLineSupplier:
+    def test_supplier_id_field_defined(self):
+        mod = _import_model('mml_forecast_financial.models.forecast_cogs_line')
+        cls = mod.ForecastCogsLine
+        assert 'supplier_id' in cls._fields_meta

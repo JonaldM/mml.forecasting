@@ -35,6 +35,11 @@ class ForecastRevenueLine(models.Model):
         compute='_compute_revenue',
         store=True,
     )
+    receipt_month = fields.Date(
+        string='Receipt Month',
+        help='First day of the month in which this revenue is expected to be received by the customer. '
+             'Computed from forecast.customer.term at generation time.',
+    )
 
     @api.depends('forecast_units', 'sell_price_unit')
     def _compute_revenue(self):
