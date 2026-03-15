@@ -74,9 +74,18 @@ def _install_odoo_stubs():
     class AbstractModel(Model): pass
     class TransientModel(Model): pass
 
+    class Constraint:
+        """Stub for odoo.models.Constraint (SQL-level unique/check constraints)."""
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __set_name__(self, owner, name):
+            pass
+
     odoo_models.Model = Model
     odoo_models.AbstractModel = AbstractModel
     odoo_models.TransientModel = TransientModel
+    odoo_models.Constraint = Constraint
 
     # ---- odoo.api ----
     odoo_api = types.ModuleType('odoo.api')

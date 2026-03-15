@@ -14,6 +14,7 @@
         'views/forecast_fx_rate_views.xml',
         'views/forecast_customer_term_views.xml',
         'views/forecast_config_views.xml',
+        'views/product_template_ext_views.xml',
         'views/menu_views.xml',
     ],
     'installable': True,
