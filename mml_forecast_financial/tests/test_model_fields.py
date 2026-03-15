@@ -93,3 +93,20 @@ class TestPnlLineActualFields:
         cls = mod.ForecastPnlLine
         for f in ('actual_revenue', 'actual_cogs', 'actual_opex'):
             assert f in cls._fields_meta, f'missing {f}'
+
+
+class TestConfigExtNewFields:
+    def test_opening_balance_ids_defined(self):
+        mod = _import_model('mml_forecast_financial.models.forecast_config_ext')
+        cls = mod.ForecastConfigFinancialExt
+        assert 'opening_balance_ids' in cls._fields_meta
+
+    def test_balance_sheet_line_ids_defined(self):
+        mod = _import_model('mml_forecast_financial.models.forecast_config_ext')
+        cls = mod.ForecastConfigFinancialExt
+        assert 'balance_sheet_line_ids' in cls._fields_meta
+
+    def test_variance_line_ids_defined(self):
+        mod = _import_model('mml_forecast_financial.models.forecast_config_ext')
+        cls = mod.ForecastConfigFinancialExt
+        assert 'variance_line_ids' in cls._fields_meta
