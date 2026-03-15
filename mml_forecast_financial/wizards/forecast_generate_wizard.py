@@ -21,16 +21,22 @@ class ForecastGenerateWizard(models.TransientModel):
         Steps:
             1. Build month buckets
             2. Pull demand forecast (ROQ or sale history)
-            3. Build revenue lines
-            4. Build COGS waterfall lines
+            3. Build revenue lines (with receipt_month per customer term)
+            4. Build COGS waterfall lines (with supplier_id for timing)
             5. Aggregate to P&L summary
-            6. Compute cash flow timing
+            6. Compute cash flow timing (per-supplier deposit/balance split)
+            7. Build balance sheet snapshots
+            8. Compute forecast vs actual variance for past periods
         """
         # Clear previous generated data
         config.revenue_line_ids.unlink()
         config.cogs_line_ids.unlink()
         config.pnl_line_ids.unlink()
         config.cashflow_line_ids.unlink()
+        config.balance_sheet_line_ids.unlink()
+        # Note: variance_line_ids are NOT unlinked here — _compute_variance_lines()
+        # unlinks them internally so they are cleared correctly on both full
+        # regeneration and standalone action_compute_variance() calls.
 
         months = self._build_month_buckets(config)
         demand = self._get_demand_forecast(config, months)
@@ -43,6 +49,8 @@ class ForecastGenerateWizard(models.TransientModel):
         cogs_lines = self._generate_cogs_lines(config, demand)
         self._generate_pnl_lines(config, months, revenue_lines, cogs_lines)
         self._generate_cashflow_lines(config, months, revenue_lines, cogs_lines)
+        self._generate_balance_sheet_lines(config, months)
+        self._compute_variance_lines(config, months)
 
     # -------------------------------------------------------------------------
     # Month buckets
@@ -193,6 +201,7 @@ class ForecastGenerateWizard(models.TransientModel):
     def _generate_revenue_lines(self, config, demand):
         """Create forecast.revenue.line records from demand data."""
         RevenueLine = self.env['forecast.revenue.line']
+        CustomerTerm = self.env['forecast.customer.term']
         lines_data = []
 
         for d in demand:
@@ -201,6 +210,11 @@ class ForecastGenerateWizard(models.TransientModel):
 
             # Get sell price: try pricelist, fallback to list price
             sell_price = self._get_sell_price(product, partner)
+
+            receipt_date = CustomerTerm.get_default_receipt_date(
+                config, d['partner_id'], d['period_start'],
+            )
+            receipt_month = receipt_date.replace(day=1)
 
             lines_data.append({
                 'config_id': config.id,
@@ -212,6 +226,7 @@ class ForecastGenerateWizard(models.TransientModel):
                 'category': d['category'],
                 'forecast_units': d['forecast_units'],
                 'sell_price_unit': sell_price,
+                'receipt_month': receipt_month,
             })
 
         lines = RevenueLine.create(lines_data)
@@ -283,6 +298,7 @@ class ForecastGenerateWizard(models.TransientModel):
                 'freight_rate_cbm': config.freight_rate_cbm,
                 'tariff_rate_pct': tariff,
                 'tpl_pick_rate': tpl_rate,
+                'supplier_id': supplier_info.get('partner_id', False),
             })
 
         lines = CogsLine.create(lines_data)
@@ -296,8 +312,9 @@ class ForecastGenerateWizard(models.TransientModel):
             return {
                 'price': info.price,
                 'currency': info.currency_id.name if info.currency_id else 'NZD',
+                'partner_id': info.partner_id.id if info.partner_id else False,
             }
-        return {'price': 0.0, 'currency': 'NZD'}
+        return {'price': 0.0, 'currency': 'NZD', 'partner_id': False}
 
     # -------------------------------------------------------------------------
     # P&L aggregation
@@ -371,29 +388,22 @@ class ForecastGenerateWizard(models.TransientModel):
         If no customer terms are found for a partner, falls back to 45 days + 20th DOM.
         """
         CashflowLine = self.env['forecast.cashflow.line']
-        CustomerTerm = self.env['forecast.customer.term']
 
         # Build month index for bucketing inflows/outflows
         month_map = {m[0]: m[1] for m in months}
         month_set = set(month_map.keys())
 
-        # --- Resolve supplier payment timing parameters ---
-        supplier_terms = config.supplier_term_ids
-        if supplier_terms:
-            # Use the first configured supplier term.
-            # Future: loop over terms if supplier_id is on cogs lines.
-            s_term = supplier_terms[0]
-            deposit_months_back = math.ceil(s_term.deposit_trigger_days / 30.0)
-            transit_months_back = math.ceil(s_term.transit_days / 30.0)
-            deposit_pct = s_term.deposit_pct / 100.0
-        else:
-            # Default NZ import assumptions: ~90-day total lead → 3-month deposit,
-            # ~22-day transit → 1-month balance.
-            deposit_months_back = 3
-            transit_months_back = 1
-            deposit_pct = 0.30
+        # --- Build per-supplier term lookup ---
+        # Falls back to NZ import defaults when a product's supplier is not in the term list.
+        _DEFAULT_DEPOSIT_MONTHS = 3
+        _DEFAULT_TRANSIT_MONTHS = 1
+        _DEFAULT_DEPOSIT_PCT = 0.30
 
-        balance_pct = 1.0 - deposit_pct
+        supplier_term_map = {
+            term.supplier_id.id: term
+            for term in config.supplier_term_ids
+            if term.supplier_id
+        }
 
         # GST/import tax rate: prefer config.tax_id, fallback to NZ 15%
         tax_rate = config.tax_id.amount / 100.0 if config.tax_id else 0.15
@@ -415,42 +425,49 @@ class ForecastGenerateWizard(models.TransientModel):
             freight = cogs.freight_total_nzd
             duty = cogs.duty_total_nzd
 
-            # Deposit payment: ceil(deposit_trigger_days/30) months before sale
+            # Resolve per-supplier timing
+            s_term = supplier_term_map.get(cogs.supplier_id.id if cogs.supplier_id else None)
+            if s_term:
+                deposit_months_back = math.ceil(s_term.deposit_trigger_days / 30.0)
+                transit_months_back = math.ceil(s_term.transit_days / 30.0)
+                deposit_pct = s_term.deposit_pct / 100.0
+            else:
+                deposit_months_back = _DEFAULT_DEPOSIT_MONTHS
+                transit_months_back = _DEFAULT_TRANSIT_MONTHS
+                deposit_pct = _DEFAULT_DEPOSIT_PCT
+            balance_pct = 1.0 - deposit_pct
+
+            # Deposit payment
             deposit_month = (
                 sale_month - relativedelta(months=deposit_months_back)
             ).replace(day=1)
             if deposit_month in month_set:
                 fob_deposit_by_month[deposit_month] += fob * deposit_pct
 
-            # Balance payment: ceil(transit_days/30) months before sale
+            # Balance payment
             balance_month = (
                 sale_month - relativedelta(months=transit_months_back)
             ).replace(day=1)
             if balance_month in month_set:
                 fob_balance_by_month[balance_month] += fob * balance_pct
-                # Freight paid same month as balance (forwarder invoices at shipment)
                 freight_by_month[balance_month] += freight
 
-            # GST/duty: paid on arrival, which aligns with the sale month
-            # CIF = FOB + freight; GST is levied on CIF value.
+            # Duty + GST on arrival (sale month)
             cif = fob + freight
             gst_on_import = cif * tax_rate
             if sale_month in month_set:
                 duty_gst_by_month[sale_month] += duty + gst_on_import
 
-            # 3PL: pick/pack/despatch costs incurred in the sale month
+            # 3PL in sale month
             if sale_month in month_set:
                 tpl_by_month[sale_month] += cogs.tpl_total_nzd
 
         # --- Receivables: bucket revenue by customer receipt month ---
+        # receipt_month is populated on revenue lines during _generate_revenue_lines()
         receipts_by_month = defaultdict(float)
         for rev in revenue_lines:
-            invoice_date = rev.period_start  # treat 1st of month as invoice date
-            receipt_date = CustomerTerm.get_default_receipt_date(
-                config, rev.partner_id.id, invoice_date,
-            )
-            receipt_month = receipt_date.replace(day=1)
-            if receipt_month in month_set:
+            receipt_month = rev.receipt_month
+            if receipt_month and receipt_month in month_set:
                 receipts_by_month[receipt_month] += rev.revenue
 
         # --- OpEx cash outflows (fixed: same month; variable: proportional to revenue) ---
@@ -474,18 +491,13 @@ class ForecastGenerateWizard(models.TransientModel):
                 if line.cost_type == 'variable'
             )
 
-            # Aggregate FOB deposit + balance into payments_fob
-            payments_fob = (
-                fob_deposit_by_month.get(period_start, 0.0)
-                + fob_balance_by_month.get(period_start, 0.0)
-            )
-
             lines_data.append({
                 'config_id': config.id,
                 'period_start': period_start,
                 'period_label': period_label,
                 'receipts_from_customers': receipts_by_month.get(period_start, 0.0),
-                'payments_fob': payments_fob,
+                'payments_fob_deposit': fob_deposit_by_month.get(period_start, 0.0),
+                'payments_fob_balance': fob_balance_by_month.get(period_start, 0.0),
                 'payments_freight': freight_by_month.get(period_start, 0.0),
                 'payments_duty_gst': duty_gst_by_month.get(period_start, 0.0),
                 'payments_3pl': tpl_by_month.get(period_start, 0.0),
@@ -500,8 +512,179 @@ class ForecastGenerateWizard(models.TransientModel):
             cumulative += line.net_cashflow
             line.cumulative_cashflow = cumulative
 
-        _logger.info(
-            'Created %d cash flow lines (deposit %d months back, balance %d months back)',
-            len(lines), deposit_months_back, transit_months_back,
-        )
+        _logger.info('Created %d cash flow lines (per-supplier timing)', len(lines))
         return lines
+
+    # -------------------------------------------------------------------------
+    # Balance Sheet generation
+    # -------------------------------------------------------------------------
+    def _generate_balance_sheet_lines(self, config, months):
+        """
+        Build monthly balance sheet snapshots from opening balance + P&L + cashflow.
+
+        Requires cumulative_cashflow to be set on all cashflow lines before calling.
+        Calls flush_model() to ensure the DB is current.
+        """
+        self.env['forecast.cashflow.line'].flush_model()
+
+        ob = config.opening_balance_ids[:1]
+        if not ob:
+            _logger.warning(
+                'No opening balance on config %s — BS lines will use zero opening values',
+                config.id,
+            )
+
+        inventory = ob.effective_inventory if ob else 0.0
+        cumulative_ebitda = 0.0
+        cashflow_by_month = {line.period_start: line for line in config.cashflow_line_ids}
+        pnl_by_month = {line.period_start: line for line in config.pnl_line_ids}
+        revenue_lines = config.revenue_line_ids
+
+        # Pre-compute future FOB balance by month (for trade payables)
+        # O(n^2) — acceptable at 12-24 month horizons.
+        future_fob_balance = {
+            m[0]: sum(
+                line.payments_fob_balance
+                for line in config.cashflow_line_ids
+                if line.period_start > m[0]
+            )
+            for m in months
+        }
+
+        lines_data = []
+        for period_start, period_label in months:
+            cf = cashflow_by_month.get(period_start)
+            pnl = pnl_by_month.get(period_start)
+
+            cash = (ob.effective_cash if ob else 0.0) + (cf.cumulative_cashflow if cf else 0.0)
+
+            trade_receivables = sum(
+                r.revenue for r in revenue_lines
+                if r.period_start <= period_start
+                and r.receipt_month
+                and r.receipt_month > period_start
+            )
+
+            fob_received = cf.payments_fob_balance if cf else 0.0
+            total_cogs = pnl.total_cogs if pnl else 0.0
+            inventory += fob_received - total_cogs
+
+            trade_payables = future_fob_balance.get(period_start, 0.0)
+            cumulative_ebitda += pnl.ebitda if pnl else 0.0
+            retained_earnings = (ob.effective_equity if ob else 0.0) + cumulative_ebitda
+
+            lines_data.append({
+                'config_id': config.id,
+                'period_start': period_start,
+                'period_label': period_label,
+                'cash': cash,
+                'trade_receivables': trade_receivables,
+                'inventory_value': inventory,
+                'trade_payables': trade_payables,
+                'retained_earnings': retained_earnings,
+            })
+
+        lines = self.env['forecast.balance.sheet.line'].create(lines_data)
+        _logger.info('Created %d balance sheet lines', len(lines))
+        return lines
+
+    # -------------------------------------------------------------------------
+    # Variance computation
+    # -------------------------------------------------------------------------
+    def _compute_variance_lines(self, config, months):
+        """
+        Compute forecast vs actual variance for past periods.
+
+        Pass 1: Product-level variance lines (forecast.variance.line).
+        Pass 2: P&L summary actuals (actual_revenue, actual_cogs, actual_opex on forecast.pnl.line).
+
+        Only processes months where period_start < date.today().
+        Silently skips if all periods are in the future.
+        """
+        from datetime import date
+        today = date.today()
+        past_months = [(ps, pl) for ps, pl in months if ps < today]
+        if not past_months:
+            _logger.info('All forecast periods are in the future — skipping variance computation')
+            return
+
+        SaleOrderLine = self.env['sale.order.line']
+        AccountMoveLine = self.env['account.move.line']
+        VarianceLine = self.env['forecast.variance.line']
+
+        # Unlink existing variance lines for this config before recomputing
+        config.variance_line_ids.unlink()
+
+        # --- Pass 1: Product-level variance ---
+        for period_start, period_label in past_months:
+            period_end = period_start + relativedelta(months=1)
+
+            actual_sol = SaleOrderLine.search([
+                ('order_id.state', 'in', ['sale', 'done']),
+                ('order_id.date_order', '>=', period_start),
+                ('order_id.date_order', '<', period_end),
+            ])
+
+            # Group actuals by (product_id, partner_id)
+            actual_by_key = defaultdict(lambda: {'units': 0.0, 'revenue': 0.0})
+            for sol in actual_sol:
+                key = (sol.product_id.id, sol.order_id.partner_id.id)
+                actual_by_key[key]['units'] += sol.product_uom_qty
+                actual_by_key[key]['revenue'] += sol.price_subtotal
+
+            # Match against forecast revenue lines
+            forecast_lines = config.revenue_line_ids.filtered(
+                lambda r: r.period_start == period_start
+            )
+
+            lines_data = []
+            for rev in forecast_lines:
+                key = (rev.product_id.id, rev.partner_id.id)
+                actuals = actual_by_key.get(key, {})
+                lines_data.append({
+                    'config_id': config.id,
+                    'period_start': period_start,
+                    'period_label': period_label,
+                    'product_id': rev.product_id.id,
+                    'partner_id': rev.partner_id.id,
+                    'brand': rev.brand,
+                    'category': rev.category,
+                    'forecast_units': rev.forecast_units,
+                    'forecast_revenue': rev.revenue,
+                    'actual_units': actuals.get('units', 0.0),
+                    'actual_revenue': actuals.get('revenue', 0.0),
+                })
+
+            if lines_data:
+                VarianceLine.create(lines_data)
+
+        # --- Pass 2: P&L summary actuals ---
+        for pnl_line in config.pnl_line_ids.filtered(lambda l: l.period_start < today):
+            period_end = pnl_line.period_start + relativedelta(months=1)
+
+            aml = AccountMoveLine.search([
+                ('move_id.state', '=', 'posted'),
+                ('date', '>=', pnl_line.period_start),
+                ('date', '<', period_end),
+                ('company_id', '=', config.company_id.id),
+            ])
+
+            pnl_line.write({
+                'actual_revenue': sum(
+                    line.balance for line in aml
+                    if line.account_id.account_type in ('income', 'income_other')
+                ),
+                'actual_cogs': abs(sum(
+                    line.balance for line in aml
+                    if line.account_id.account_type == 'expense_direct_cost'
+                )),
+                'actual_opex': abs(sum(
+                    line.balance for line in aml
+                    if line.account_id.account_type == 'expense'
+                )),
+            })
+
+        _logger.info(
+            'Computed variance for %d past periods on config %s',
+            len(past_months), config.id,
+        )
