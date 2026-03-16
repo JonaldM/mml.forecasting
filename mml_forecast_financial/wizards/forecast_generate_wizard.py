@@ -527,14 +527,7 @@ class ForecastGenerateWizard(models.TransientModel):
         """
         self.env['forecast.cashflow.line'].flush_model()
 
-        ob = config.opening_balance_ids[:1]
-        if not ob:
-            _logger.warning(
-                'No opening balance on config %s — BS lines will use zero opening values',
-                config.id,
-            )
-
-        inventory = ob.effective_inventory if ob else 0.0
+        inventory = config.effective_inventory
         cumulative_ebitda = 0.0
         cashflow_by_month = {line.period_start: line for line in config.cashflow_line_ids}
         pnl_by_month = {line.period_start: line for line in config.pnl_line_ids}
@@ -556,7 +549,7 @@ class ForecastGenerateWizard(models.TransientModel):
             cf = cashflow_by_month.get(period_start)
             pnl = pnl_by_month.get(period_start)
 
-            cash = (ob.effective_cash if ob else 0.0) + (cf.cumulative_cashflow if cf else 0.0)
+            cash = config.effective_cash + (cf.cumulative_cashflow if cf else 0.0)
 
             trade_receivables = sum(
                 r.revenue for r in revenue_lines
@@ -576,7 +569,7 @@ class ForecastGenerateWizard(models.TransientModel):
 
             trade_payables = future_fob_balance.get(period_start, 0.0)
             cumulative_ebitda += pnl.ebitda if pnl else 0.0
-            retained_earnings = (ob.effective_equity if ob else 0.0) + cumulative_ebitda
+            retained_earnings = config.effective_equity + cumulative_ebitda
 
             lines_data.append({
                 'config_id': config.id,
