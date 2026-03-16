@@ -51,6 +51,7 @@
 
                     <!-- Summary KPIs (visible when generated) -->
                     <group string="Forecast Summary"
+                           name="forecast_summary"
                            invisible="state == 'draft'">
                         <group>
                             <field name="total_revenue" widget="monetary"/>

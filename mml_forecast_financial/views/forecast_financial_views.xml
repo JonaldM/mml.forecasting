@@ -18,7 +18,7 @@
             </xpath>
 
             <!-- KPI strip + setup progress tracker: inject after Forecast Summary group -->
-            <xpath expr="//group[@string='Forecast Summary']" position="after">
+            <xpath expr="//group[@name='forecast_summary']" position="after">
 
                 <!-- KPI strip: visible when forecast is generated or locked -->
                 <div class="o_row bg-100 p-2 rounded mb-2"
