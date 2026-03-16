@@ -51,35 +51,20 @@
                 <!-- Setup progress tracker: visible only in draft -->
                 <div class="o_row p-2 mb-2" invisible="state != 'draft'">
                     <span class="me-1 fw-semibold">Setup:</span>
-                    <span decoration-success="setup_period_done"
-                          decoration-muted="not setup_period_done">
-                        <field name="setup_period_done" invisible="1"/>
-                        Period
-                    </span>
+                    <span class="badge text-bg-success me-1" invisible="not setup_period_done">Period</span>
+                    <span class="badge text-bg-secondary me-1" invisible="setup_period_done">Period</span>
                     <span class="mx-1 text-muted">&#8594;</span>
-                    <span decoration-success="setup_fx_done"
-                          decoration-muted="not setup_fx_done">
-                        <field name="setup_fx_done" invisible="1"/>
-                        FX Rates
-                    </span>
+                    <span class="badge text-bg-success me-1" invisible="not setup_fx_done">FX Rates</span>
+                    <span class="badge text-bg-secondary me-1" invisible="setup_fx_done">FX Rates</span>
                     <span class="mx-1 text-muted">&#8594;</span>
-                    <span decoration-success="setup_terms_done"
-                          decoration-muted="not setup_terms_done">
-                        <field name="setup_terms_done" invisible="1"/>
-                        Payment Terms
-                    </span>
+                    <span class="badge text-bg-success me-1" invisible="not setup_terms_done">Payment Terms</span>
+                    <span class="badge text-bg-secondary me-1" invisible="setup_terms_done">Payment Terms</span>
                     <span class="mx-1 text-muted">&#8594;</span>
-                    <span decoration-success="setup_ob_done"
-                          decoration-muted="not setup_ob_done">
-                        <field name="setup_ob_done" invisible="1"/>
-                        Opening Balance
-                    </span>
+                    <span class="badge text-bg-success me-1" invisible="not setup_ob_done">Opening Balance</span>
+                    <span class="badge text-bg-secondary me-1" invisible="setup_ob_done">Opening Balance</span>
                     <span class="mx-1 text-muted">&#8594;</span>
-                    <span decoration-success="setup_opex_done"
-                          decoration-muted="not setup_opex_done">
-                        <field name="setup_opex_done" invisible="1"/>
-                        Operating Expenses
-                    </span>
+                    <span class="badge text-bg-success me-1" invisible="not setup_opex_done">Operating Expenses</span>
+                    <span class="badge text-bg-secondary me-1" invisible="setup_opex_done">Operating Expenses</span>
                 </div>
 
             </xpath>
