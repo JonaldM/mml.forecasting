@@ -9,16 +9,105 @@
         <field name="inherit_id" ref="mml_forecast_core.view_forecast_config_form"/>
         <field name="arch" type="xml">
 
-            <!-- Header buttons -->
+            <!-- Header buttons (Compute Variance only — Pull from Accounting moves to OB tab) -->
             <xpath expr="//header" position="inside">
-                <button name="action_pull_opening_balance"
-                        string="Pull from Accounting"
-                        type="object"
-                        invisible="state == 'locked'"/>
                 <button name="action_compute_variance"
                         string="Compute Variance"
                         type="object"
                         invisible="state != 'generated'"/>
+            </xpath>
+
+            <!-- KPI strip + setup progress tracker: inject after Forecast Summary group -->
+            <xpath expr="//group[@string='Forecast Summary']" position="after">
+
+                <!-- KPI strip: visible when forecast is generated or locked -->
+                <div class="o_row bg-100 p-2 rounded mb-2"
+                     invisible="state == 'draft'"
+                     style="display:flex; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <span class="text-muted small">$ 12-Mo Revenue</span><br/>
+                        <field name="kpi_total_revenue" nolabel="1" readonly="1"/>
+                    </div>
+                    <div>
+                        <span class="text-muted small">$ EBITDA</span><br/>
+                        <field name="kpi_ebitda" nolabel="1" readonly="1"/>
+                    </div>
+                    <div>
+                        <span class="text-muted small">$ Total COGS</span><br/>
+                        <field name="kpi_total_cogs" nolabel="1" readonly="1"/>
+                    </div>
+                    <div>
+                        <span class="text-muted small">$ Ending Cash</span><br/>
+                        <field name="kpi_ending_cash" nolabel="1" readonly="1"/>
+                    </div>
+                    <div>
+                        <span class="text-muted small">$ Cash Low Point</span><br/>
+                        <field name="kpi_cash_low_value" nolabel="1" readonly="1"
+                               decoration-danger="kpi_cash_low_value &lt; 50000"/>
+                        <field name="kpi_cash_low_month" nolabel="1" readonly="1"/>
+                    </div>
+                </div>
+
+                <!-- Setup progress tracker: visible only in draft -->
+                <div class="o_row p-2 mb-2" invisible="state != 'draft'">
+                    <span class="me-1 fw-semibold">Setup:</span>
+                    <span decoration-success="setup_period_done"
+                          decoration-muted="not setup_period_done">
+                        <field name="setup_period_done" invisible="1"/>
+                        Period
+                    </span>
+                    <span class="mx-1 text-muted">&#8594;</span>
+                    <span decoration-success="setup_fx_done"
+                          decoration-muted="not setup_fx_done">
+                        <field name="setup_fx_done" invisible="1"/>
+                        FX Rates
+                    </span>
+                    <span class="mx-1 text-muted">&#8594;</span>
+                    <span decoration-success="setup_terms_done"
+                          decoration-muted="not setup_terms_done">
+                        <field name="setup_terms_done" invisible="1"/>
+                        Payment Terms
+                    </span>
+                    <span class="mx-1 text-muted">&#8594;</span>
+                    <span decoration-success="setup_ob_done"
+                          decoration-muted="not setup_ob_done">
+                        <field name="setup_ob_done" invisible="1"/>
+                        Opening Balance
+                    </span>
+                    <span class="mx-1 text-muted">&#8594;</span>
+                    <span decoration-success="setup_opex_done"
+                          decoration-muted="not setup_opex_done">
+                        <field name="setup_opex_done" invisible="1"/>
+                        Operating Expenses
+                    </span>
+                </div>
+
+            </xpath>
+
+            <!-- Rename Customer Payment Terms tab to Payment Terms, add supplier list below -->
+            <xpath expr="//page[@name='customer_terms']" position="attributes">
+                <attribute name="string">Payment Terms</attribute>
+            </xpath>
+
+            <xpath expr="//page[@name='customer_terms']/field[@name='customer_term_ids']"
+                   position="after">
+                <separator string="Supplier Payment Terms"/>
+                <field name="supplier_term_ids">
+                    <list editable="bottom">
+                        <field name="supplier_id"/>
+                        <field name="deposit_pct"/>
+                        <field name="deposit_trigger_days"/>
+                        <field name="production_lead_days"/>
+                        <field name="origin_port_id"/>
+                        <field name="payment_method"/>
+                        <field name="notes"/>
+                    </list>
+                </field>
+            </xpath>
+
+            <!-- Hide the now-redundant Supplier Payment Terms tab -->
+            <xpath expr="//page[@name='supplier_terms']" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
 
             <!-- Inject financial tabs after the Notes tab -->
@@ -30,48 +119,53 @@
                         Auto-pulled from Odoo accounting trial balance at the forecast start date.
                         Toggle Override to enter a manual value — the auto value is still retained.
                     </p>
-                    <p class="text-muted" invisible="opening_balance_ids">
-                        No opening balance data yet. Click <b>Pull from Accounting</b> in the header to populate from the trial balance.
+                    <p class="text-muted" invisible="opening_balance_pulled">
+                        No opening balance data yet. Click <b>Pull from Accounting</b> below to
+                        populate from the trial balance.
                     </p>
-                    <field name="opening_balance_ids" nolabel="1">
-                        <form>
-                            <group string="Cash">
-                                <field name="opening_cash" string="Cash (Auto)" readonly="1"/>
-                                <field name="override_cash"/>
-                                <field name="opening_cash_manual" string="Cash (Manual)"
-                                       invisible="not override_cash"/>
-                                <field name="effective_cash" string="Cash (Effective)" readonly="1"/>
-                            </group>
-                            <group string="Receivables">
-                                <field name="opening_receivables" string="Receivables (Auto)" readonly="1"/>
-                                <field name="override_receivables"/>
-                                <field name="opening_receivables_manual" string="Receivables (Manual)"
-                                       invisible="not override_receivables"/>
-                                <field name="effective_receivables" string="Receivables (Effective)" readonly="1"/>
-                            </group>
-                            <group string="Inventory">
-                                <field name="opening_inventory" string="Inventory (Auto)" readonly="1"/>
-                                <field name="override_inventory"/>
-                                <field name="opening_inventory_manual" string="Inventory (Manual)"
-                                       invisible="not override_inventory"/>
-                                <field name="effective_inventory" string="Inventory (Effective)" readonly="1"/>
-                            </group>
-                            <group string="Payables">
-                                <field name="opening_payables" string="Payables (Auto)" readonly="1"/>
-                                <field name="override_payables"/>
-                                <field name="opening_payables_manual" string="Payables (Manual)"
-                                       invisible="not override_payables"/>
-                                <field name="effective_payables" string="Payables (Effective)" readonly="1"/>
-                            </group>
-                            <group string="Equity">
-                                <field name="opening_equity" string="Equity (Auto)" readonly="1"/>
-                                <field name="override_equity"/>
-                                <field name="opening_equity_manual" string="Equity (Manual)"
-                                       invisible="not override_equity"/>
-                                <field name="effective_equity" string="Equity (Effective)" readonly="1"/>
-                            </group>
-                        </form>
-                    </field>
+                    <button name="action_pull_opening_balance"
+                            string="Pull from Accounting"
+                            type="object"
+                            class="btn btn-secondary mb-3"
+                            invisible="state == 'locked'"/>
+                    <group string="Cash">
+                        <field name="opening_cash" string="Cash (Auto)" readonly="1"/>
+                        <field name="override_cash"/>
+                        <field name="opening_cash_manual" string="Cash (Manual)"
+                               invisible="not override_cash"/>
+                        <field name="effective_cash" string="Cash (Effective)" readonly="1"/>
+                    </group>
+                    <group string="Receivables">
+                        <field name="opening_receivables" string="Receivables (Auto)" readonly="1"/>
+                        <field name="override_receivables"/>
+                        <field name="opening_receivables_manual" string="Receivables (Manual)"
+                               invisible="not override_receivables"/>
+                        <field name="effective_receivables" string="Receivables (Effective)"
+                               readonly="1"/>
+                    </group>
+                    <group string="Inventory">
+                        <field name="opening_inventory" string="Inventory (Auto)" readonly="1"/>
+                        <field name="override_inventory"/>
+                        <field name="opening_inventory_manual" string="Inventory (Manual)"
+                               invisible="not override_inventory"/>
+                        <field name="effective_inventory" string="Inventory (Effective)"
+                               readonly="1"/>
+                    </group>
+                    <group string="Payables">
+                        <field name="opening_payables" string="Payables (Auto)" readonly="1"/>
+                        <field name="override_payables"/>
+                        <field name="opening_payables_manual" string="Payables (Manual)"
+                               invisible="not override_payables"/>
+                        <field name="effective_payables" string="Payables (Effective)"
+                               readonly="1"/>
+                    </group>
+                    <group string="Equity">
+                        <field name="opening_equity" string="Equity (Auto)" readonly="1"/>
+                        <field name="override_equity"/>
+                        <field name="opening_equity_manual" string="Equity (Manual)"
+                               invisible="not override_equity"/>
+                        <field name="effective_equity" string="Equity (Effective)" readonly="1"/>
+                    </group>
                 </page>
 
                 <!-- Tab: Operating Expenses -->
@@ -80,12 +174,19 @@
                         <list editable="bottom">
                             <field name="name"/>
                             <field name="cost_type"/>
-                            <field name="monthly_amount"/>
+                            <field name="monthly_amount" string="Monthly Amount (NZD)"/>
                             <field name="pct_of_revenue"/>
                             <field name="notes"/>
                         </list>
                     </field>
                 </page>
+
+                <!-- Tab grouping separator: visually divides Setup tabs from Results tabs.
+                     Odoo 19 notebooks only accept <page> children, so a separator page
+                     is used. It is only visible when results are available (state != draft),
+                     matching the visibility of the results tabs that follow. -->
+                <page string="&#9472;&#9472; Results &#9472;&#9472;" name="results_separator"
+                      invisible="state == 'draft'"/>
 
                 <!-- Tab: P&L Summary -->
                 <page string="P&amp;L Summary" name="pnl_summary"
