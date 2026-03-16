@@ -143,7 +143,7 @@ class ForecastConfigFinancialExt(models.Model):
         string='EBITDA', digits=(16, 2), compute='_compute_kpis',
     )
     kpi_total_cogs = fields.Float(
-        string='Total COGS', digits=(16, 2), compute='_compute_kpis',
+        string='12-Mo Total COGS', digits=(16, 2), compute='_compute_kpis',
     )
     kpi_ending_cash = fields.Float(
         string='Ending Cash', digits=(16, 2), compute='_compute_kpis',

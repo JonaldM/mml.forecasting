@@ -33,7 +33,7 @@
                         <field name="kpi_ebitda" nolabel="1" readonly="1"/>
                     </div>
                     <div>
-                        <span class="text-muted small">$ Total COGS</span><br/>
+                        <span class="text-muted small">$ 12-Mo COGS</span><br/>
                         <field name="kpi_total_cogs" nolabel="1" readonly="1"/>
                     </div>
                     <div>
