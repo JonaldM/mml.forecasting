@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Variance pivot view -->
+    <record id="view_forecast_variance_pivot" model="ir.ui.view">
+        <field name="name">forecast.variance.line.pivot</field>
+        <field name="model">forecast.variance.line</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="brand" type="row"/>
+                <field name="product_id" type="row"/>
+                <field name="period_label" type="col"/>
+                <field name="forecast_revenue" type="measure"/>
+                <field name="actual_revenue" type="measure"/>
+                <field name="variance_revenue" type="measure"/>
+                <field name="variance_revenue_pct" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Variance list view -->
+    <record id="view_forecast_variance_list" model="ir.ui.view">
+        <field name="name">forecast.variance.line.list</field>
+        <field name="model">forecast.variance.line</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="config_id"/>
+                <field name="period_label"/>
+                <field name="product_id"/>
+                <field name="partner_id"/>
+                <field name="brand"/>
+                <field name="forecast_units"/>
+                <field name="actual_units"/>
+                <field name="forecast_revenue" widget="monetary"/>
+                <field name="actual_revenue" widget="monetary"/>
+                <field name="variance_revenue" widget="monetary"/>
+                <field name="variance_revenue_pct" widget="percentage"
+                       decoration-success="variance_revenue_pct &gt; 0"
+                       decoration-danger="variance_revenue_pct &lt; -10"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_forecast_variance" model="ir.actions.act_window">
+        <field name="name">Variance</field>
+        <field name="res_model">forecast.variance.line</field>
+        <field name="view_mode">pivot,list</field>
+    </record>
+
+</odoo>

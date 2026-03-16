@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Balance Sheet standalone list view -->
+    <record id="view_forecast_balance_sheet_list" model="ir.ui.view">
+        <field name="name">forecast.balance.sheet.line.list</field>
+        <field name="model">forecast.balance.sheet.line</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="config_id"/>
+                <field name="period_label"/>
+                <field name="cash" widget="monetary"/>
+                <field name="trade_receivables" widget="monetary"/>
+                <field name="inventory_value" widget="monetary"/>
+                <field name="total_current_assets" widget="monetary"/>
+                <field name="trade_payables" widget="monetary"/>
+                <field name="retained_earnings" widget="monetary"/>
+                <field name="total_equity" widget="monetary"/>
+                <field name="bs_difference" widget="monetary"
+                       decoration-danger="abs(bs_difference) &gt; total_current_assets * 0.01"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_forecast_balance_sheet" model="ir.actions.act_window">
+        <field name="name">Balance Sheet</field>
+        <field name="res_model">forecast.balance.sheet.line</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>
