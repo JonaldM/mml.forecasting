@@ -565,6 +565,11 @@ class ForecastGenerateWizard(models.TransientModel):
                 and r.receipt_month > period_start
             )
 
+            # Inventory roll-forward (simplified):
+            # - fob_received uses payment timing (balance month) as proxy for goods receipt
+            #   (actual receipt is ~transit_days later; ignored here for planning-grade accuracy)
+            # - total_cogs includes freight/duty/3PL, not only FOB cost of goods
+            #   (full COGS used for simplicity; bs_difference absorbs this discrepancy)
             fob_received = cf.payments_fob_balance if cf else 0.0
             total_cogs = pnl.total_cogs if pnl else 0.0
             inventory += fob_received - total_cogs
@@ -619,6 +624,8 @@ class ForecastGenerateWizard(models.TransientModel):
             period_end = period_start + relativedelta(months=1)
 
             actual_sol = SaleOrderLine.search([
+                # NOTE: no company_id filter — MML is single-company.
+                # Add ('order_id.company_id', '=', config.company_id.id) if multi-entity is needed.
                 ('order_id.state', 'in', ['sale', 'done']),
                 ('order_id.date_order', '>=', period_start),
                 ('order_id.date_order', '<', period_end),
@@ -669,10 +676,10 @@ class ForecastGenerateWizard(models.TransientModel):
             ])
 
             pnl_line.write({
-                'actual_revenue': sum(
+                'actual_revenue': abs(sum(
                     line.balance for line in aml
                     if line.account_id.account_type in ('income', 'income_other')
-                ),
+                )),
                 'actual_cogs': abs(sum(
                     line.balance for line in aml
                     if line.account_id.account_type == 'expense_direct_cost'
