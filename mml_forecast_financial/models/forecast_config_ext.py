@@ -9,6 +9,11 @@ _logger = logging.getLogger(__name__)
 _ITEMS = ['cash', 'receivables', 'inventory', 'payables', 'equity']
 
 
+def effective_value(auto: float, manual: float, override: bool) -> float:
+    """Return the manual value when override is True, otherwise the auto value."""
+    return manual if override else auto
+
+
 class ForecastConfigFinancialExt(models.Model):
     """
     Extends forecast.config with financial relationships, opening balance fields,

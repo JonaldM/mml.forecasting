@@ -5,7 +5,7 @@ without Odoo. The wizard calls these functions internally.
 
 Run: pytest mml_forecast_financial/tests/test_bs_helpers.py -q
 """
-from mml_forecast_financial.models.forecast_opening_balance import effective_value
+from mml_forecast_financial.models.forecast_config_ext import effective_value
 
 
 class TestEffectiveValue:
