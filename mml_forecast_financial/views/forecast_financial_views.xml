@@ -239,7 +239,7 @@
     <!-- ── Menus ──────────────────────────────────────── -->
 
     <menuitem id="menu_forecast_financial"
-              name="Financial Planning"
+              name="Analysis"
               parent="mml_forecast_core.menu_mml_forecasting_root"
               sequence="20"/>
 
