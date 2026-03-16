@@ -9,6 +9,8 @@
     'depends': ['mml_base', 'mml_forecast_core', 'account'],
     'data': [
         'security/ir.model.access.csv',
+        'views/forecast_balance_sheet_views.xml',
+        'views/forecast_variance_views.xml',
         'views/forecast_financial_views.xml',
     ],
     'installable': True,

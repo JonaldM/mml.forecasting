@@ -10,3 +10,9 @@ access_forecast_cashflow_line_manager,forecast.cashflow.line manager,model_forec
 access_forecast_opex_line_user,forecast.opex.line user,model_forecast_opex_line,base.group_user,1,0,0,0
 access_forecast_opex_line_manager,forecast.opex.line manager,model_forecast_opex_line,base.group_system,1,1,1,1
 access_forecast_generate_wizard_user,forecast.generate.wizard user,model_forecast_generate_wizard,base.group_user,1,1,1,1
+access_forecast_opening_balance_user,forecast.opening.balance user,model_forecast_opening_balance,base.group_user,1,0,0,0
+access_forecast_opening_balance_manager,forecast.opening.balance manager,model_forecast_opening_balance,base.group_system,1,1,1,1
+access_forecast_balance_sheet_line_user,forecast.balance.sheet.line user,model_forecast_balance_sheet_line,base.group_user,1,0,0,0
+access_forecast_balance_sheet_line_manager,forecast.balance.sheet.line manager,model_forecast_balance_sheet_line,base.group_system,1,1,1,1
+access_forecast_variance_line_user,forecast.variance.line user,model_forecast_variance_line,base.group_user,1,0,0,0
+access_forecast_variance_line_manager,forecast.variance.line manager,model_forecast_variance_line,base.group_system,1,1,1,1
