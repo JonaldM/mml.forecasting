@@ -87,8 +87,8 @@ class TestForecastPipelineVerification:
 
     def test_revenue_reasonable(self, pipeline_output):
         rev = pipeline_output['kpis']['total_revenue']
-        # 7 products × flat units × ~$150k/month × 12 months = ~$1.8M
-        assert 1_600_000 < rev < 2_000_000, f'12M revenue {rev:,.0f} outside expected range'
+        # Scaled to ~$3.8M ex-GST annual (management run-rate figure)
+        assert 3_600_000 < rev < 4_000_000, f'12M revenue {rev:,.0f} outside expected range'
 
     def test_ebitda_positive(self, pipeline_output):
         ebitda = pipeline_output['kpis']['total_ebitda']
@@ -98,8 +98,9 @@ class TestForecastPipelineVerification:
         rev = pipeline_output['kpis']['total_revenue']
         ebitda = pipeline_output['kpis']['total_ebitda']
         margin = ebitda / rev * 100
-        # Given 60% gross margin and $50k/month opex, EBITDA margin ~26%
-        assert 20.0 < margin < 35.0, f'EBITDA margin {margin:.1f}% outside expected 20-35% range'
+        # ~60% gross margin; $50k/month OpEx on $3.8M revenue = 15.8% ratio → EBITDA ~44%
+        # (NOTE: OpEx is a placeholder — real figure needed from Odoo chart of accounts)
+        assert 35.0 < margin < 55.0, f'EBITDA margin {margin:.1f}% outside expected 35-55% range'
 
     def test_ending_cash_higher_than_opening(self, pipeline_output):
         ending = pipeline_output['kpis']['ending_cash']
@@ -133,12 +134,12 @@ class TestForecastPipelineVerification:
 
     def test_duty_only_on_tariffed_products(self, pipeline_output):
         m1 = pipeline_output['month1_pnl']
-        # Only AL-002 has 5% tariff. AL-002: 250 units
+        # Only AL-002 has 5% tariff. AL-002: 525 units (scaled from 250)
         # CIF/unit = (22/0.6 + 0.010*200) = 36.6667 + 2.00 = 38.6667
         # duty/unit = 38.6667 * 5% = 1.9333
-        # total duty = 250 * 1.9333 = 483.33
-        assert abs(m1['cogs_duty'] - 483.33) < 1.0, (
-            f"Month 1 duty {m1['cogs_duty']:.2f} expected ~483.33 (only AL-002 has tariff)"
+        # total duty = 525 * 1.9333 = 1015.00
+        assert abs(m1['cogs_duty'] - 1015.00) < 1.0, (
+            f"Month 1 duty {m1['cogs_duty']:.2f} expected ~1015.00 (only AL-002 has tariff)"
         )
 
 

@@ -34,10 +34,14 @@ SCENARIO = {
     'freight_rate_cbm': 200.0,     # NZD per CBM (LCL China-NZ)
     'gst_rate': 0.15,              # NZ GST 15%
 
-    # Supplier terms (shared — single main supplier for this scenario)
-    'deposit_pct': 0.30,
-    'deposit_months_back': 3,      # ceil(90 days / 30)
-    'balance_months_back': 1,      # ceil(30 days / 30)
+    # Supplier terms — 100% TT at NZ port arrival (actual practice, not B/L date)
+    # Contractual terms are "100% TT on B/L" but payment is made when the vessel
+    # arrives at NZ port (~25-30 day transit from China). Goods available for sale
+    # after customs clearance + 3PL delivery, which falls within the same calendar
+    # month as port arrival. Modelled as: 0% deposit, 100% in sale month (months_back=0).
+    'deposit_pct': 0.0,
+    'deposit_months_back': 0,      # no deposit
+    'balance_months_back': 0,      # 100% at port arrival = same month as sale
 
     # Customer terms: 45 days from invoice date, then next 20th of month
     'customer_payment_days': 45,
@@ -53,42 +57,43 @@ SCENARIO = {
     # OpEx (fixed only for simplicity)
     'opex_fixed_monthly': 50_000.0,
 
-    # Products: list of product dicts
+    # Products: units_per_month scaled to ~$3.8M ex-GST annual revenue
+    # (actual FY run-rate per management; previous scenario was ~$1.8M — corrected)
     'products': [
         {
             'code': 'VOLERE-001', 'brand': 'Volere', 'category': 'Cleaning',
             'fob_usd': 8.50,  'cbm': 0.004, 'tariff_pct': 0.0, 'tpl_rate': 2.50,
-            'units_per_month': 500, 'sell_price_nzd': 42.50,
+            'units_per_month': 1_050, 'sell_price_nzd': 42.50,
         },
         {
             'code': 'VOLERE-002', 'brand': 'Volere', 'category': 'Cleaning',
             'fob_usd': 12.00, 'cbm': 0.006, 'tariff_pct': 0.0, 'tpl_rate': 2.50,
-            'units_per_month': 300, 'sell_price_nzd': 60.00,
+            'units_per_month': 630, 'sell_price_nzd': 60.00,
         },
         {
             'code': 'AL-001', 'brand': 'Annabel Langbein', 'category': 'Kitchenware',
             'fob_usd': 15.00, 'cbm': 0.008, 'tariff_pct': 0.0, 'tpl_rate': 3.00,
-            'units_per_month': 400, 'sell_price_nzd': 75.00,
+            'units_per_month': 840, 'sell_price_nzd': 75.00,
         },
         {
             'code': 'AL-002', 'brand': 'Annabel Langbein', 'category': 'Kitchenware',
             'fob_usd': 22.00, 'cbm': 0.010, 'tariff_pct': 5.0, 'tpl_rate': 3.00,
-            'units_per_month': 250, 'sell_price_nzd': 110.00,
+            'units_per_month': 525, 'sell_price_nzd': 110.00,
         },
         {
             'code': 'ENKEL-001', 'brand': 'Enkel', 'category': 'Storage',
             'fob_usd': 6.00,  'cbm': 0.003, 'tariff_pct': 0.0, 'tpl_rate': 2.00,
-            'units_per_month': 600, 'sell_price_nzd': 30.00,
+            'units_per_month': 1_260, 'sell_price_nzd': 30.00,
         },
         {
             'code': 'ENDURO-001', 'brand': 'Enduro', 'category': 'Outdoors',
             'fob_usd': 18.00, 'cbm': 0.012, 'tariff_pct': 0.0, 'tpl_rate': 3.50,
-            'units_per_month': 200, 'sell_price_nzd': 90.00,
+            'units_per_month': 420, 'sell_price_nzd': 90.00,
         },
         {
             'code': 'RC-001', 'brand': 'Rufus & Coco', 'category': 'Pet',
             'fob_usd': 10.00, 'cbm': 0.005, 'tariff_pct': 0.0, 'tpl_rate': 2.50,
-            'units_per_month': 350, 'sell_price_nzd': 50.00,
+            'units_per_month': 740, 'sell_price_nzd': 50.00,
         },
     ],
 }
@@ -451,19 +456,17 @@ def independent_verify(scenario):
     m1_gst_import = sum(p['units'] * p['gst_import_unit'] for p in per_unit)
 
     # Month 1 cashflow
-    # Deposit: goods for M4 land in M1 → 30% of M4's FOB = same as M1 (flat demand)
-    # Balance: goods for M2 land in M1 → 70% of M2's FOB = 70% of m1_fob
-    # Freight: same timing as balance → M2's freight in M1
-    # Duty+GST: M1's own duty + gst_import
-    # 3PL: M1's own 3PL
-    # Customer receipts: M1 revenue receipts land in M2 (receipt_month = May 2026)
-    #   → M1 has 0 receipts (nothing received before forecast start)
+    # Payment terms: 100% TT at port arrival = 0% deposit, 100% in same month as sale.
+    # Goods arrive at NZ port in the same calendar month they are sold (25-30 day transit).
+    # So ALL supplier outflows (FOB 100%, freight) land in the sale month.
+    # Customer receipts: M1 revenue received in M2 (45 days + 20th DOM → May 2026).
+    # GST refund: M1 payment refunded in M3 (2-month lag).
     m1_cf_inflow = 0.0           # no customer receipts in M1 (all shift to M2+)
     m1_gst_refund = 0.0          # GST refund for M1 lands in M3
-    m1_fob_deposit = m1_fob * dep_pct          # deposit for M4 (lands in M1 = M4-3)
-    m1_fob_balance = m1_fob * bal_pct          # balance for M2 (lands in M1 = M2-1)
-    m1_freight_out = m1_freight                 # freight for M2 lands in M1
-    m1_duty_gst_out = m1_duty + m1_gst_import  # M1's own duty + GST
+    m1_fob_deposit = 0.0                        # no deposit under 100% TT at port
+    m1_fob_balance = m1_fob * bal_pct           # 100% FOB paid in M1 (same month as sale)
+    m1_freight_out = m1_freight                  # freight paid at port arrival = M1
+    m1_duty_gst_out = m1_duty + m1_gst_import   # M1's own duty + GST at customs
     m1_3pl_out = m1_3pl
     m1_opex_out = s['opex_fixed_monthly']
     m1_total_out = (m1_fob_deposit + m1_fob_balance + m1_freight_out
@@ -471,7 +474,7 @@ def independent_verify(scenario):
     m1_net_cf = m1_cf_inflow - m1_total_out
     m1_ending_cash = s['opening_cash'] + m1_net_cf   # cumulative after M1
 
-    # 12-month KPIs (flat demand — all months identical except M1 receipts/M12 FOB)
+    # 12-month KPIs (flat demand, 100% TT at port — all months identical except M1)
     # Revenue: 12 × m1_revenue
     total_12_revenue = m1_revenue * 12
 
@@ -479,25 +482,18 @@ def independent_verify(scenario):
     total_12_cogs = m1_total_cogs * 12
     total_12_ebitda = m1_ebitda * 12
 
-    # Ending cash: calculated exactly in pipeline — replicate here
-    # M1: -m1_total_out (inflows 0)
-    # M2-M11: receipts 150,250, gst_refund 0 for M2 then 7,976 M3+, same outflows (minus edge)
-    # M12: receipts 150,250 + gst_refund 7,976, but NO deposit/balance/freight (last 3 months)
-    # Simpler: trust the pipeline for cumulative cash; just verify M1 snap
-    # For this verifier, compute simplified 12-month ending cash directly:
-    # Inflows (12 months): customer receipts for M2-M12 = 11 × m1_revenue
-    #                      GST refunds for M3-M12 = 10 × m1_gst_import
-    # Outflows (12 months): deposit M1-M9 (9 months) = 9 × m1_fob × dep_pct
-    #                       balance M1-M11 (11 months) = 11 × m1_fob × bal_pct
-    #                       freight M1-M11 (11 months) = 11 × m1_freight
-    #                       duty+gst all 12 = 12 × (m1_duty + m1_gst_import)
-    #                       3pl all 12 = 12 × m1_3pl
-    #                       opex all 12 = 12 × opex
+    # Ending cash (12-month direct calculation):
+    # Inflows: customer receipts for M2-M12 = 11 × m1_revenue
+    #          GST refunds for M3-M12 = 10 × m1_gst_import
+    # Outflows: FOB 100% all 12 months = 12 × m1_fob
+    #           freight all 12 months = 12 × m1_freight
+    #           duty+GST all 12 months = 12 × (m1_duty + m1_gst_import)
+    #           3PL all 12 months = 12 × m1_3pl
+    #           OpEx all 12 months = 12 × opex
     total_inflows = (m1_revenue * 11) + (m1_gst_import * 10)
     total_outflows = (
-        m1_fob * dep_pct * 9
-        + m1_fob * bal_pct * 11
-        + m1_freight * 11
+        m1_fob * 12               # 100% FOB in same month, all 12 months
+        + m1_freight * 12
         + (m1_duty + m1_gst_import) * 12
         + m1_3pl * 12
         + s['opex_fixed_monthly'] * 12
