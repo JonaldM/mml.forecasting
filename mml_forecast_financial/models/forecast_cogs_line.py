@@ -103,8 +103,9 @@ class ForecastCogsLine(models.Model):
             rec.freight_unit_nzd = rec.cbm_per_unit * rec.freight_rate_cbm
             rec.freight_total_nzd = rec.freight_unit_nzd * u
 
-            # Duty (% of FOB NZD value)
-            rec.duty_unit_nzd = rec.fob_unit_nzd * (rec.tariff_rate_pct / 100.0)
+            # Duty (% of CIF NZD value — NZ Customs assesses on FOB + freight per unit)
+            cif_unit_nzd = rec.fob_unit_nzd + rec.freight_unit_nzd
+            rec.duty_unit_nzd = cif_unit_nzd * (rec.tariff_rate_pct / 100.0)
             rec.duty_total_nzd = rec.duty_unit_nzd * u
 
             # 3PL

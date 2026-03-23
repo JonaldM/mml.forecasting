@@ -225,17 +225,21 @@ class ForecastConfigFinancialExt(models.Model):
     @api.depends(
         'pnl_line_ids.revenue', 'pnl_line_ids.ebitda', 'pnl_line_ids.total_cogs',
         'cashflow_line_ids.cumulative_cashflow', 'cashflow_line_ids.period_label',
+        'effective_cash',
     )
     def _compute_kpis(self):
         for rec in self:
             rec.kpi_total_revenue = sum(rec.pnl_line_ids.mapped('revenue'))
             rec.kpi_ebitda = sum(rec.pnl_line_ids.mapped('ebitda'))
             rec.kpi_total_cogs = sum(rec.pnl_line_ids.mapped('total_cogs'))
+            opening_cash = rec.effective_cash
             cf = rec.cashflow_line_ids.sorted('id')
             if cf:
-                rec.kpi_ending_cash = cf[-1].cumulative_cashflow
+                # Ending cash = opening balance + final cumulative cashflow movement
+                rec.kpi_ending_cash = opening_cash + cf[-1].cumulative_cashflow
+                # Cash low point = minimum of (opening balance + cumulative cashflow) each period
                 min_line = min(cf, key=lambda l: l.cumulative_cashflow)
-                rec.kpi_cash_low_value = min_line.cumulative_cashflow
+                rec.kpi_cash_low_value = opening_cash + min_line.cumulative_cashflow
                 rec.kpi_cash_low_month = min_line.period_label
             else:
                 rec.kpi_ending_cash = 0.0

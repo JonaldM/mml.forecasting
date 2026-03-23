@@ -238,7 +238,17 @@ class ForecastGenerateWizard(models.TransientModel):
         """
         Resolve sell price for a product-customer pair.
         Priority: customer pricelist → product list_price.
+
+        WARNING: Prices are assumed to be ex-GST (exclusive of GST/VAT).
+        If any pricelist is configured with GST-inclusive prices, revenue
+        will be overstated by the GST component (15% in NZ). Verify that
+        all pricelists assigned to forecast customers use ex-GST pricing.
         """
+        _logger.warning(
+            'Sell price for product %s (partner %s) is assumed ex-GST. '
+            'GST-inclusive pricelists will overstate revenue by the GST component.',
+            product.display_name, partner.display_name,
+        )
         # Safe pricelist price lookup for Odoo 17+
         # property_product_pricelist was moved to sale_management in Odoo 17.
         # _get_product_price() no longer accepts a partner argument from Odoo 17.
@@ -415,6 +425,8 @@ class ForecastGenerateWizard(models.TransientModel):
         freight_by_month = defaultdict(float)
         duty_gst_by_month = defaultdict(float)
         tpl_by_month = defaultdict(float)
+        # Import GST refund inflows (~2 months after the GST outflow)
+        gst_refund_by_month = defaultdict(float)
 
         for cogs in cogs_lines:
             sale_month = cogs.period_start
@@ -458,6 +470,11 @@ class ForecastGenerateWizard(models.TransientModel):
             if sale_month in month_set:
                 duty_gst_by_month[sale_month] += duty + gst_on_import
 
+            # Import GST refund (input tax credit recovered ~2 months after payment)
+            refund_month = (sale_month + relativedelta(months=2)).replace(day=1)
+            if refund_month in month_set:
+                gst_refund_by_month[refund_month] += gst_on_import
+
             # 3PL in sale month
             if sale_month in month_set:
                 tpl_by_month[sale_month] += cogs.tpl_total_nzd
@@ -496,6 +513,7 @@ class ForecastGenerateWizard(models.TransientModel):
                 'period_start': period_start,
                 'period_label': period_label,
                 'receipts_from_customers': receipts_by_month.get(period_start, 0.0),
+                'import_gst_refund': gst_refund_by_month.get(period_start, 0.0),
                 'payments_fob_deposit': fob_deposit_by_month.get(period_start, 0.0),
                 'payments_fob_balance': fob_balance_by_month.get(period_start, 0.0),
                 'payments_freight': freight_by_month.get(period_start, 0.0),
@@ -533,7 +551,12 @@ class ForecastGenerateWizard(models.TransientModel):
         pnl_by_month = {line.period_start: line for line in config.pnl_line_ids}
         revenue_lines = config.revenue_line_ids
 
-        # Pre-compute future FOB balance by month (for trade payables)
+        # Opening payables from the trial balance (accounts payable at forecast start).
+        # This is the balance owed to suppliers before the forecast period begins.
+        opening_payables = config.effective_payables
+
+        # Pre-compute future FOB balance by month (for trade payables).
+        # This captures uncommitted forward FOB payments still outstanding after each month.
         # O(n^2) — acceptable at 12-24 month horizons.
         future_fob_balance = {
             m[0]: sum(
@@ -543,6 +566,8 @@ class ForecastGenerateWizard(models.TransientModel):
             )
             for m in months
         }
+
+        first_period = months[0][0] if months else None
 
         lines_data = []
         for period_start, period_label in months:
@@ -558,16 +583,23 @@ class ForecastGenerateWizard(models.TransientModel):
                 and r.receipt_month > period_start
             )
 
-            # Inventory roll-forward (simplified):
-            # - fob_received uses payment timing (balance month) as proxy for goods receipt
+            # Inventory roll-forward:
+            # - fob_received uses the FOB balance payment as proxy for goods receipt
             #   (actual receipt is ~transit_days later; ignored here for planning-grade accuracy)
-            # - total_cogs includes freight/duty/3PL, not only FOB cost of goods
-            #   (full COGS used for simplicity; bs_difference absorbs this discrepancy)
+            # - subtract only FOB-basis cost of goods sold (matching the FOB inventory value
+            #   added on receipt); using full landed COGS would deflate inventory below zero
             fob_received = cf.payments_fob_balance if cf else 0.0
-            total_cogs = pnl.total_cogs if pnl else 0.0
-            inventory += fob_received - total_cogs
+            fob_cogs = pnl.cogs_fob if pnl else 0.0
+            inventory += fob_received - fob_cogs
 
+            # Trade payables: uncommitted forward FOB payments still to be made after
+            # this period. For the first period, also include the opening payables balance
+            # from the trial balance — these are supplier invoices already outstanding at
+            # the start of the forecast that are not captured in the cashflow buckets.
             trade_payables = future_fob_balance.get(period_start, 0.0)
+            if period_start == first_period:
+                trade_payables += opening_payables
+
             cumulative_ebitda += pnl.ebitda if pnl else 0.0
             retained_earnings = config.effective_equity + cumulative_ebitda
 

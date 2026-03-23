@@ -264,11 +264,12 @@ class TestSetupCompletionBooleans:
 class TestKpiFields:
     """Pure-Python tests for _compute_kpis."""
 
-    def _run_kpi_compute(self, pnl_lines, cf_lines):
+    def _run_kpi_compute(self, pnl_lines, cf_lines, effective_cash=0.0):
         from mml_forecast_financial.models.forecast_config_ext import ForecastConfigFinancialExt
         rec = _FakeRec(
             pnl_line_ids=_FakeRecordset(pnl_lines),
             cashflow_line_ids=_FakeRecordset(cf_lines),
+            effective_cash=effective_cash,
             kpi_total_revenue=None,
             kpi_ebitda=None,
             kpi_total_cogs=None,

@@ -20,6 +20,11 @@ class ForecastCashflowLine(models.Model):
         string='Customer Receipts (NZD)',
         help='Revenue received this month based on payment term timing.',
     )
+    import_gst_refund = fields.Float(
+        string='Import GST Refund (NZD)',
+        help='GST input tax credit recovered from IRD, approximately 2 months '
+             'after the import GST was paid to NZ Customs.',
+    )
 
     # --- Outflows ---
     payments_fob_deposit = fields.Float(
@@ -70,7 +75,7 @@ class ForecastCashflowLine(models.Model):
             rec.payments_fob = rec.payments_fob_deposit + rec.payments_fob_balance
 
     @api.depends(
-        'receipts_from_customers',
+        'receipts_from_customers', 'import_gst_refund',
         'payments_fob_deposit', 'payments_fob_balance',
         'payments_freight', 'payments_duty_gst',
         'payments_3pl', 'payments_opex',
@@ -84,4 +89,5 @@ class ForecastCashflowLine(models.Model):
                 + rec.payments_3pl
                 + rec.payments_opex
             )
-            rec.net_cashflow = rec.receipts_from_customers - rec.total_outflows
+            total_inflows = rec.receipts_from_customers + rec.import_gst_refund
+            rec.net_cashflow = total_inflows - rec.total_outflows
