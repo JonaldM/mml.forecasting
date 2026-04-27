@@ -6,6 +6,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 from odoo import models, api
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class ForecastGenerateWizard(models.TransientModel):
         Main forecast generation pipeline.
 
         Steps:
+            0. Validate ex-GST pricelists (hard gate; ValidationError on miss)
             1. Build month buckets
             2. Pull demand forecast (ROQ or sale history)
             3. Build revenue lines (with receipt_month per customer term)
@@ -29,6 +31,11 @@ class ForecastGenerateWizard(models.TransientModel):
             7. Build balance sheet snapshots
             8. Compute forecast vs actual variance for past periods
         """
+        # Step 0: hard constraint — pricelists feeding revenue must be ex-GST.
+        # A GST-inclusive pricelist would overstate 12-month forecast revenue
+        # by the GST component (~15% in NZ). Fail fast before we touch lines.
+        self._validate_pricelists_ex_gst(config)
+
         # Clear previous generated data
         config.revenue_line_ids.unlink()
         config.cogs_line_ids.unlink()
@@ -237,18 +244,12 @@ class ForecastGenerateWizard(models.TransientModel):
     def _get_sell_price(self, product, partner):
         """
         Resolve sell price for a product-customer pair.
-        Priority: customer pricelist → product list_price.
+        Priority: customer pricelist -> product list_price.
 
-        WARNING: Prices are assumed to be ex-GST (exclusive of GST/VAT).
-        If any pricelist is configured with GST-inclusive prices, revenue
-        will be overstated by the GST component (15% in NZ). Verify that
-        all pricelists assigned to forecast customers use ex-GST pricing.
+        Pricelists are guaranteed ex-GST by _validate_pricelists_ex_gst(),
+        which runs at the top of generate() and raises ValidationError if
+        any partner pricelist has a GST-inclusive tax linked.
         """
-        _logger.warning(
-            'Sell price for product %s (partner %s) is assumed ex-GST. '
-            'GST-inclusive pricelists will overstate revenue by the GST component.',
-            product.display_name, partner.display_name,
-        )
         # Safe pricelist price lookup for Odoo 17+
         # property_product_pricelist was moved to sale_management in Odoo 17.
         # _get_product_price() no longer accepts a partner argument from Odoo 17.
@@ -261,6 +262,104 @@ class ForecastGenerateWizard(models.TransientModel):
         except (AttributeError, TypeError):
             pass
         return product.list_price or 0.0
+
+    # -------------------------------------------------------------------------
+    # GST / pricelist validation
+    # -------------------------------------------------------------------------
+    def _validate_pricelists_ex_gst(self, config):
+        """
+        Enforce that every customer pricelist referenced by config.customer_term_ids
+        prices goods exclusive of GST/VAT.
+
+        A GST-inclusive pricelist would push the GST component into revenue, inflating
+        the 12-month forecast by ~15% in NZ. We detect this by inspecting each
+        pricelist's linked taxes for ``price_include=True`` and raise a
+        ``ValidationError`` listing every offending pricelist + customer.
+
+        The method is a regular instance method so the wizard can call it as
+        ``self._validate_pricelists_ex_gst(config)``. It only reads the config and
+        does not touch ``self.env``, which keeps it unit-testable without a live
+        Odoo registry (see ``test_pricelist_gst_constraint.py``).
+        """
+        offenders = []
+        seen_pricelist_ids = set()
+
+        for term in config.customer_term_ids:
+            partner = getattr(term, 'partner_id', None)
+            if not partner:
+                continue
+            pricelist = getattr(partner, 'property_product_pricelist', None)
+            if not pricelist:
+                continue
+            pricelist_key = getattr(pricelist, 'id', id(pricelist))
+
+            inclusive_taxes = ForecastGenerateWizard._inclusive_taxes_on_pricelist(pricelist)
+            if not inclusive_taxes:
+                continue
+            if pricelist_key in seen_pricelist_ids:
+                # Same pricelist already flagged via another customer term;
+                # one entry per pricelist+customer pair is sufficient context.
+                continue
+            seen_pricelist_ids.add(pricelist_key)
+
+            offenders.append({
+                'partner_name': getattr(partner, 'display_name', None)
+                                or getattr(partner, 'name', '<unnamed customer>'),
+                'pricelist_name': getattr(pricelist, 'display_name', None)
+                                  or getattr(pricelist, 'name', '<unnamed pricelist>'),
+                'tax_names': [
+                    getattr(t, 'display_name', None) or getattr(t, 'name', '<unnamed tax>')
+                    for t in inclusive_taxes
+                ],
+            })
+
+        if not offenders:
+            return
+
+        bullet_lines = [
+            "  - Customer '{partner}' uses pricelist '{pricelist}' "
+            "(GST-inclusive tax: {taxes})".format(
+                partner=o['partner_name'],
+                pricelist=o['pricelist_name'],
+                taxes=', '.join(o['tax_names']),
+            )
+            for o in offenders
+        ]
+        message = (
+            "Forecast cannot be generated: customer pricelists must be "
+            "GST-exclusive. The following are GST-inclusive:\n"
+            + "\n".join(bullet_lines)
+            + "\n\nSet the linked tax's 'price_include' flag to False before "
+              "generating, or assign an ex-GST pricelist to the customer."
+        )
+        raise ValidationError(message)
+
+    @staticmethod
+    def _inclusive_taxes_on_pricelist(pricelist):
+        """
+        Return a list of taxes on ``pricelist`` whose ``price_include`` is True.
+
+        Odoo's stock pricelist model carries taxes via pricelist items
+        (``item_ids.tax_ids``). Some installations bolt a flat ``tax_ids`` field
+        onto the pricelist itself. We support both shapes so the validator
+        works regardless of the customisation depth.
+        """
+        candidates = []
+        flat_taxes = getattr(pricelist, 'tax_ids', None)
+        if flat_taxes:
+            candidates.extend(list(flat_taxes))
+        items = getattr(pricelist, 'item_ids', None)
+        if items:
+            for item in items:
+                item_taxes = getattr(item, 'tax_ids', None)
+                if item_taxes:
+                    candidates.extend(list(item_taxes))
+
+        inclusive = []
+        for tax in candidates:
+            if getattr(tax, 'price_include', False):
+                inclusive.append(tax)
+        return inclusive
 
     # -------------------------------------------------------------------------
     # COGS generation
