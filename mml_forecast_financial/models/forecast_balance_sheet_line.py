@@ -12,45 +12,63 @@ class ForecastBalanceSheetLine(models.Model):
         required=True,
         ondelete='cascade',
     )
+    currency_id = fields.Many2one(
+        'res.currency',
+        related='config_id.company_id.currency_id',
+        store=True,
+        string='Currency',
+    )
     period_start = fields.Date(string='Month Start', required=True)
     period_label = fields.Char(string='Period')
 
     # --- Assets (stored — written by wizard) ---
-    cash = fields.Float(string='Cash (NZD)', digits=(16, 2))
-    trade_receivables = fields.Float(string='Trade Receivables (NZD)', digits=(16, 2))
-    inventory_value = fields.Float(string='Inventory (NZD)', digits=(16, 2))
+    cash = fields.Monetary(string='Cash (NZD)', currency_field='currency_id')
+    trade_receivables = fields.Monetary(
+        string='Trade Receivables (NZD)',
+        currency_field='currency_id',
+    )
+    inventory_value = fields.Monetary(
+        string='Inventory (NZD)',
+        currency_field='currency_id',
+    )
 
     # --- Liabilities (stored) ---
-    trade_payables = fields.Float(string='Trade Payables (NZD)', digits=(16, 2))
+    trade_payables = fields.Monetary(
+        string='Trade Payables (NZD)',
+        currency_field='currency_id',
+    )
 
     # --- Equity (stored) ---
-    retained_earnings = fields.Float(string='Retained Earnings (NZD)', digits=(16, 2))
+    retained_earnings = fields.Monetary(
+        string='Retained Earnings (NZD)',
+        currency_field='currency_id',
+    )
 
     # --- Computed summaries (not stored) ---
-    total_current_assets = fields.Float(
+    total_current_assets = fields.Monetary(
         string='Total Current Assets (NZD)',
+        currency_field='currency_id',
         compute='_compute_bs_totals',
-        digits=(16, 2),
     )
-    total_current_liabilities = fields.Float(
+    total_current_liabilities = fields.Monetary(
         string='Total Current Liabilities (NZD)',
+        currency_field='currency_id',
         compute='_compute_bs_totals',
-        digits=(16, 2),
     )
-    total_equity = fields.Float(
+    total_equity = fields.Monetary(
         string='Total Equity (NZD)',
+        currency_field='currency_id',
         compute='_compute_bs_totals',
-        digits=(16, 2),
     )
-    total_assets = fields.Float(
+    total_assets = fields.Monetary(
         string='Total Assets (NZD)',
+        currency_field='currency_id',
         compute='_compute_bs_totals',
-        digits=(16, 2),
     )
-    bs_difference = fields.Float(
+    bs_difference = fields.Monetary(
         string='BS Check (NZD)',
+        currency_field='currency_id',
         compute='_compute_bs_totals',
-        digits=(16, 2),
         help='Total Assets minus (Total Liabilities + Total Equity). '
              'Non-zero due to simplified model (no fixed assets, GST credits, etc.). '
              'Displayed in red if > 1%% of total assets.',

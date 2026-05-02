@@ -12,26 +12,34 @@ class ForecastPnlLine(models.Model):
         required=True,
         ondelete='cascade',
     )
+    currency_id = fields.Many2one(
+        'res.currency',
+        related='config_id.company_id.currency_id',
+        store=True,
+        string='Currency',
+    )
     period_start = fields.Date(string='Month Start', required=True)
     period_label = fields.Char(string='Period')
 
     # Revenue
-    revenue = fields.Float(string='Revenue (NZD)')
+    revenue = fields.Monetary(string='Revenue (NZD)', currency_field='currency_id')
 
     # COGS breakdown
-    cogs_fob = fields.Float(string='FOB Cost (NZD)')
-    cogs_freight = fields.Float(string='Freight (NZD)')
-    cogs_duty = fields.Float(string='Duty (NZD)')
-    cogs_3pl = fields.Float(string='3PL (NZD)')
-    total_cogs = fields.Float(
+    cogs_fob = fields.Monetary(string='FOB Cost (NZD)', currency_field='currency_id')
+    cogs_freight = fields.Monetary(string='Freight (NZD)', currency_field='currency_id')
+    cogs_duty = fields.Monetary(string='Duty (NZD)', currency_field='currency_id')
+    cogs_3pl = fields.Monetary(string='3PL (NZD)', currency_field='currency_id')
+    total_cogs = fields.Monetary(
         string='Total COGS (NZD)',
+        currency_field='currency_id',
         compute='_compute_margins',
         store=True,
     )
 
     # Margins
-    gross_margin = fields.Float(
+    gross_margin = fields.Monetary(
         string='Gross Margin (NZD)',
+        currency_field='currency_id',
         compute='_compute_margins',
         store=True,
     )
@@ -42,17 +50,19 @@ class ForecastPnlLine(models.Model):
     )
 
     # OpEx
-    opex_fixed = fields.Float(string='Fixed OpEx (NZD)')
-    opex_variable = fields.Float(string='Variable OpEx (NZD)')
-    total_opex = fields.Float(
+    opex_fixed = fields.Monetary(string='Fixed OpEx (NZD)', currency_field='currency_id')
+    opex_variable = fields.Monetary(string='Variable OpEx (NZD)', currency_field='currency_id')
+    total_opex = fields.Monetary(
         string='Total OpEx (NZD)',
+        currency_field='currency_id',
         compute='_compute_margins',
         store=True,
     )
 
     # Bottom line
-    ebitda = fields.Float(
+    ebitda = fields.Monetary(
         string='EBITDA (NZD)',
+        currency_field='currency_id',
         compute='_compute_margins',
         store=True,
     )
@@ -63,26 +73,35 @@ class ForecastPnlLine(models.Model):
     )
 
     # --- Actuals (populated by action_compute_variance) ---
-    actual_revenue = fields.Float(string='Actual Revenue (NZD)', digits=(16, 2))
-    actual_cogs = fields.Float(string='Actual COGS (NZD)', digits=(16, 2))
-    actual_opex = fields.Float(string='Actual OpEx (NZD)', digits=(16, 2))
-
-    actual_gross_margin = fields.Float(
-        string='Actual Gross Margin (NZD)',
-        compute='_compute_actuals',
-        digits=(16, 2),
+    actual_revenue = fields.Monetary(
+        string='Actual Revenue (NZD)',
+        currency_field='currency_id',
     )
-    actual_ebitda = fields.Float(
-        string='Actual EBITDA (NZD)',
+    actual_cogs = fields.Monetary(
+        string='Actual COGS (NZD)',
+        currency_field='currency_id',
+    )
+    actual_opex = fields.Monetary(
+        string='Actual OpEx (NZD)',
+        currency_field='currency_id',
+    )
+
+    actual_gross_margin = fields.Monetary(
+        string='Actual Gross Margin (NZD)',
+        currency_field='currency_id',
         compute='_compute_actuals',
-        digits=(16, 2),
+    )
+    actual_ebitda = fields.Monetary(
+        string='Actual EBITDA (NZD)',
+        currency_field='currency_id',
+        compute='_compute_actuals',
     )
 
     # --- Variance ---
-    variance_revenue = fields.Float(
+    variance_revenue = fields.Monetary(
         string='Variance Revenue (NZD)',
+        currency_field='currency_id',
         compute='_compute_actuals',
-        digits=(16, 2),
     )
     variance_revenue_pct = fields.Float(
         string='Variance Revenue %',

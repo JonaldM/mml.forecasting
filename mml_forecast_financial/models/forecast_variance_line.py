@@ -21,6 +21,12 @@ class ForecastVarianceLine(models.Model):
         required=True,
         ondelete='cascade',
     )
+    currency_id = fields.Many2one(
+        'res.currency',
+        related='config_id.company_id.currency_id',
+        store=True,
+        string='Currency',
+    )
     period_start = fields.Date(string='Month Start', required=True)
     period_label = fields.Char(string='Period')
 
@@ -32,11 +38,17 @@ class ForecastVarianceLine(models.Model):
 
     # Forecast values (from forecast.revenue.line)
     forecast_units = fields.Float(string='Forecast Units', digits=(12, 2))
-    forecast_revenue = fields.Float(string='Forecast Revenue (NZD)', digits=(16, 2))
+    forecast_revenue = fields.Monetary(
+        string='Forecast Revenue (NZD)',
+        currency_field='currency_id',
+    )
 
     # Actual values (from sale.order.line)
     actual_units = fields.Float(string='Actual Units', digits=(12, 2))
-    actual_revenue = fields.Float(string='Actual Revenue (NZD)', digits=(16, 2))
+    actual_revenue = fields.Monetary(
+        string='Actual Revenue (NZD)',
+        currency_field='currency_id',
+    )
 
     # Computed variances
     variance_units = fields.Float(
@@ -44,10 +56,10 @@ class ForecastVarianceLine(models.Model):
         compute='_compute_variance',
         digits=(12, 2),
     )
-    variance_revenue = fields.Float(
+    variance_revenue = fields.Monetary(
         string='Variance Revenue (NZD)',
+        currency_field='currency_id',
         compute='_compute_variance',
-        digits=(16, 2),
     )
     variance_revenue_pct = fields.Float(
         string='Variance %',

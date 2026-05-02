@@ -12,6 +12,12 @@ class ForecastRevenueLine(models.Model):
         required=True,
         ondelete='cascade',
     )
+    currency_id = fields.Many2one(
+        'res.currency',
+        related='config_id.company_id.currency_id',
+        store=True,
+        string='Currency',
+    )
     period_start = fields.Date(string='Month Start', required=True)
     period_label = fields.Char(string='Period', help='E.g. 2026-04')
 
@@ -29,9 +35,13 @@ class ForecastRevenueLine(models.Model):
 
     # Values
     forecast_units = fields.Float(string='Forecast Units', digits=(12, 0))
-    sell_price_unit = fields.Float(string='Sell Price / Unit (NZD)', digits=(12, 4))
-    revenue = fields.Float(
+    sell_price_unit = fields.Monetary(
+        string='Sell Price / Unit (NZD)',
+        currency_field='currency_id',
+    )
+    revenue = fields.Monetary(
         string='Revenue (NZD)',
+        currency_field='currency_id',
         compute='_compute_revenue',
         store=True,
     )

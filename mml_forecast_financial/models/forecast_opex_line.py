@@ -12,6 +12,12 @@ class ForecastOpexLine(models.Model):
         required=True,
         ondelete='cascade',
     )
+    currency_id = fields.Many2one(
+        'res.currency',
+        related='config_id.company_id.currency_id',
+        store=True,
+        string='Currency',
+    )
     sequence = fields.Integer(default=10)
     name = fields.Char(string='Expense Name', required=True)
     cost_type = fields.Selection([
@@ -20,8 +26,9 @@ class ForecastOpexLine(models.Model):
     ], string='Type', required=True, default='fixed')
 
     # Fixed cost fields
-    monthly_amount = fields.Float(
+    monthly_amount = fields.Monetary(
         string='Monthly Amount (NZD)',
+        currency_field='currency_id',
         help='For fixed costs: amount per month.',
     )
 

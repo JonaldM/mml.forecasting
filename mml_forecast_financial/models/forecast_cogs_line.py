@@ -12,6 +12,12 @@ class ForecastCogsLine(models.Model):
         required=True,
         ondelete='cascade',
     )
+    currency_id = fields.Many2one(
+        'res.currency',
+        related='config_id.company_id.currency_id',
+        store=True,
+        string='Currency',
+    )
     period_start = fields.Date(string='Month Start', required=True)
     period_label = fields.Char(string='Period')
 
@@ -39,48 +45,69 @@ class ForecastCogsLine(models.Model):
     fob_unit_fcy = fields.Float(string='FOB / Unit (FCY)', digits=(12, 4))
     fob_currency = fields.Char(string='FOB Currency')
     fx_rate_applied = fields.Float(string='FX Rate (NZD per FCY)', digits=(12, 4))
-    fob_unit_nzd = fields.Float(string='FOB / Unit (NZD)', digits=(12, 4))
-    fob_total_nzd = fields.Float(
+    fob_unit_nzd = fields.Monetary(
+        string='FOB / Unit (NZD)',
+        currency_field='currency_id',
+    )
+    fob_total_nzd = fields.Monetary(
         string='FOB Total (NZD)',
+        currency_field='currency_id',
         compute='_compute_totals',
         store=True,
     )
 
     # Freight
     cbm_per_unit = fields.Float(string='CBM / Unit', digits=(12, 6))
-    freight_rate_cbm = fields.Float(string='Freight Rate ($/CBM)', digits=(12, 2))
-    freight_unit_nzd = fields.Float(string='Freight / Unit (NZD)', digits=(12, 4))
-    freight_total_nzd = fields.Float(
+    freight_rate_cbm = fields.Monetary(
+        string='Freight Rate ($/CBM)',
+        currency_field='currency_id',
+    )
+    freight_unit_nzd = fields.Monetary(
+        string='Freight / Unit (NZD)',
+        currency_field='currency_id',
+    )
+    freight_total_nzd = fields.Monetary(
         string='Freight Total (NZD)',
+        currency_field='currency_id',
         compute='_compute_totals',
         store=True,
     )
 
     # Duty
     tariff_rate_pct = fields.Float(string='Tariff Rate %', digits=(5, 2))
-    duty_unit_nzd = fields.Float(string='Duty / Unit (NZD)', digits=(12, 4))
-    duty_total_nzd = fields.Float(
+    duty_unit_nzd = fields.Monetary(
+        string='Duty / Unit (NZD)',
+        currency_field='currency_id',
+    )
+    duty_total_nzd = fields.Monetary(
         string='Duty Total (NZD)',
+        currency_field='currency_id',
         compute='_compute_totals',
         store=True,
     )
 
     # 3PL
-    tpl_pick_rate = fields.Float(string='3PL Pick Rate / Unit (NZD)', digits=(12, 4))
-    tpl_total_nzd = fields.Float(
+    tpl_pick_rate = fields.Monetary(
+        string='3PL Pick Rate / Unit (NZD)',
+        currency_field='currency_id',
+    )
+    tpl_total_nzd = fields.Monetary(
         string='3PL Total (NZD)',
+        currency_field='currency_id',
         compute='_compute_totals',
         store=True,
     )
 
     # Totals
-    landed_unit_nzd = fields.Float(
+    landed_unit_nzd = fields.Monetary(
         string='Landed Cost / Unit (NZD)',
+        currency_field='currency_id',
         compute='_compute_totals',
         store=True,
     )
-    total_cogs_nzd = fields.Float(
+    total_cogs_nzd = fields.Monetary(
         string='Total COGS (NZD)',
+        currency_field='currency_id',
         compute='_compute_totals',
         store=True,
     )

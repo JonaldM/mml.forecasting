@@ -250,6 +250,14 @@ class ForecastGenerateWizard(models.TransientModel):
         which runs at the top of generate() and raises ValidationError if
         any partner pricelist has a GST-inclusive tax linked.
         """
+<<<<<<< HEAD
+=======
+        _logger.debug(
+            'Sell price for product %s (partner %s) is assumed ex-GST. '
+            'GST-inclusive pricelists will overstate revenue by the GST component.',
+            product.display_name, partner.display_name,
+        )
+>>>>>>> e750db7 (refactor(forecast_financial): Float -> Monetary on 8 financial models)
         # Safe pricelist price lookup for Odoo 17+
         # property_product_pricelist was moved to sale_management in Odoo 17.
         # _get_product_price() no longer accepts a partner argument from Odoo 17.
@@ -565,7 +573,7 @@ class ForecastGenerateWizard(models.TransientModel):
 
             # Duty + GST on arrival (sale month)
             cif = fob + freight
-            gst_on_import = cif * tax_rate
+            gst_on_import = (cif + duty) * tax_rate
             if sale_month in month_set:
                 duty_gst_by_month[sale_month] += duty + gst_on_import
 
@@ -748,8 +756,7 @@ class ForecastGenerateWizard(models.TransientModel):
             period_end = period_start + relativedelta(months=1)
 
             actual_sol = SaleOrderLine.search([
-                # NOTE: no company_id filter — MML is single-company.
-                # Add ('order_id.company_id', '=', config.company_id.id) if multi-entity is needed.
+                ('order_id.company_id', '=', config.company_id.id),
                 ('order_id.state', 'in', ['sale', 'done']),
                 ('order_id.date_order', '>=', period_start),
                 ('order_id.date_order', '<', period_end),
